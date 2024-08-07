@@ -6,9 +6,6 @@ using System.Configuration;
 var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 try
 {
-
-    logger.Debug("init main");
-
     var builder = WebApplication.CreateBuilder(args);
     builder.Logging.ClearProviders();
     builder.Host.UseNLog();

@@ -1,10 +1,9 @@
-using Client.API.Data;
-using Client.API.ExceptionMiddleware;
-using Client.API.Models.Mapping;
-using Client.API.Services;
-using Client.API.Services.Hash;
-using Client.API.Services.LoggerService;
 using Microsoft.EntityFrameworkCore;
+using ProjectLibrary.Data;
+using ProjectLibrary.ExceptionMiddleware;
+using ProjectLibrary.Models.Mapping;
+using ProjectLibrary.Services.Hash;
+using ProjectLibrary.Services.LoggerService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ClientContext>( options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+builder.Services.AddDbContext<DBContext>( options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 builder.Services.AddSingleton<IHashService, Md5HashService>();
 builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
 

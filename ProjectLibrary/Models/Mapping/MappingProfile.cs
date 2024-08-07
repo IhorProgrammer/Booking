@@ -7,9 +7,10 @@ namespace ProjectLibrary.Models.Mapping
     public class MappingProfile : Profile
     {
         public MappingProfile() {
-            CreateMap<ClientData, ClientModel>();
-            CreateMap<ClientModel, ClientData>();
-
+            //Client
+            CreateMap<ClientData, ClientModel>().ReverseMap();
+            //Token
+            CreateMap<TokenData, TokenModel>().ReverseMap();
         }
     }
 }

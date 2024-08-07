@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Net.Mail;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
@@ -9,43 +10,20 @@ namespace ProjectLibrary.Models.DTO
         //[Url(ErrorMessage = "Avatar must be a valid URL.")]
         [JsonPropertyName("avatar")]
         public string Avatar { get; set; } = default!;
-
-        [Required(ErrorMessage = "Real Name is required.")]
-        [StringLength(32, ErrorMessage = "Real Name cannot be longer than 32 characters.")]
         [JsonPropertyName("real_name")]
         public string RealName { get; set; } = default!;
-
-        [Required(ErrorMessage = "Nickname is required.")]
-        [StringLength(16, ErrorMessage = "Nickname cannot be longer than 16 characters.")]
         [JsonPropertyName("nickname")]
         public string Nickname { get; set; } = default!;
-
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Email must be a valid email address.")]
-        [StringLength(254, ErrorMessage = "Email cannot be longer than 254 characters.")]
         [JsonPropertyName("email")]
         public string Email { get; set; } = default!;
-
-        [Required(ErrorMessage = "Phone number is required.")]
-        [Phone(ErrorMessage = "Phone must be a valid phone number.")]
-        [StringLength(16, ErrorMessage = "Phone cannot be longer than 16 characters.")]
         [JsonPropertyName("phone")]
         public string Phone { get; set; } = default!;
-
-        [Required(ErrorMessage = "Birthday is required.")]
-        [DataType(DataType.Date)]
         [JsonPropertyName("birthday")]
         public DateTime Birthday { get; set; }
         [JsonPropertyName("gender")]
         public bool Gender { get; set; }
-
-        [Required(ErrorMessage = "Citizenship is required.")]
-        [StringLength(50, ErrorMessage = "Citizenship cannot be longer than 50 characters.")]
         [JsonPropertyName("citizenship")]
         public string Citizenship { get; set; } = default!;
-
-        [Required(ErrorMessage = "Password is required.")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between 6 and 100 characters.")]
         [JsonPropertyName("password")]
         public string Password { get; set; } = default!;
 
@@ -84,6 +62,10 @@ namespace ProjectLibrary.Models.DTO
         }
         public bool RealNameValidation() 
         {
+
+            if( String.IsNullOrEmpty(RealName) ) return false;
+            if (RealName.Length > 32) return false;
+
             var regex = new Regex(@"^\p{Lu}\p{Ll}*$");
             if (!regex.IsMatch(RealName))
             {
@@ -94,6 +76,9 @@ namespace ProjectLibrary.Models.DTO
         }
         public bool NicknameValidation() 
         {
+            if (String.IsNullOrEmpty(Nickname)) return false;
+            if (Nickname.Length > 16) return false;
+
             var regex = new Regex("^[a-zA-Z]+$");
             if (!regex.IsMatch(RealName))
             {
@@ -103,14 +88,29 @@ namespace ProjectLibrary.Models.DTO
         }
         public bool EmailValidation()
         {
+            if (String.IsNullOrEmpty(Email)) return false;
+            if (Email.Length > 254) return false;
+            try
+            {
+                MailAddress m = new MailAddress(Email);
+            }
+            catch
+            {
+                return false;
+            }
             return true;
         }
         public bool PhoneValidation()
         {
+            if (String.IsNullOrEmpty(Phone)) return false;
+            if (Phone.Length > 16) return false;
+            Regex validatePhoneNumberRegex = new Regex("^\\+?[1-9][0-9]{7,14}$");
+            if (!validatePhoneNumberRegex.IsMatch(Phone)) return false;
             return true;
         }
         public bool BirthdayValidation()
         {
+
             return true;
         }
         public bool GenderValidation()
@@ -119,10 +119,16 @@ namespace ProjectLibrary.Models.DTO
         }
         public bool CitizenshipValidation()
         {
+            if (String.IsNullOrEmpty(Citizenship)) return false;
+            if (Citizenship.Length > 16) return false;
             return true;
         }
         public bool PasswordValidation()
         {
+            if (String.IsNullOrEmpty(Password)) return false;
+            if (Password.Length > 100) return false;
+            Regex validatePasswordRegex = new Regex("^(?=.*?[A-Za-z])(?=.*?[0-9]).{8,}$");
+            if (!validatePasswordRegex.IsMatch(Password)) return false;
             return true;
         }
     }

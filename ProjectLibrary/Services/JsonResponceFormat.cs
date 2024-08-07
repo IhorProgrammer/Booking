@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace ProjectLibrary.Services
@@ -12,11 +13,11 @@ namespace ProjectLibrary.Services
         public MetaData Meta { get; set; } = default!;
 
 
-        public static string GetResponce(string status, int code, string message, T data)
+        public static string GetResponce(HttpStatusCode code, string message, T data)
         {
             var jf = new JsonResponceFormat<T>();
             jf.Data = data;
-            jf.Meta = new MetaData( status, code, message );
+            jf.Meta = new MetaData((int)code, message );
             string jsonString = JsonSerializer.Serialize<JsonResponceFormat<T>>(jf);
 
             return jsonString;
@@ -27,16 +28,13 @@ namespace ProjectLibrary.Services
             [JsonPropertyName("created")]
             public DateTime Timestamp { get; set; }
             [JsonPropertyName("status")]
-            public string Status { get; set; }
-            [JsonPropertyName("message")]
             public string Message { get; set; }
             [JsonPropertyName("code")]
             public int Code { get; set; }
 
-            public MetaData(string status, int code, string message)
+            public MetaData(int code, string message)
             {
                 Timestamp = DateTime.UtcNow;
-                Status = status;
                 Code = code;
                 Message = message;
             }

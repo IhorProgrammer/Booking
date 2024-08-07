@@ -12,19 +12,19 @@ using System.Net;
 
 namespace Token.API.Controllers
 {
-    [Route("")]
+    [Route("/recovery")]
     [ApiController]
-    public class TokenController : ControllerBase
+    public class TokenRecoveryController : ControllerBase
     {
         private readonly DBContext _context;
         private readonly IHashService _hashService;
         private readonly ILoggerManager _loggerManager;
         private readonly IMapper _mapper;
 
-        private const int TokenExpires = 86400;
+        private const int TokenExpires = 3600;
 
 
-        public TokenController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper)
+        public TokenRecoveryController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper)
         {
             _context = context;
             _hashService = hashService;
@@ -40,7 +40,7 @@ namespace Token.API.Controllers
                 (token) =>
                 token.ID.Equals(token)
                 && token.TokenExpires > timeNow
-                && token.TokenType == TokenType.Default
+                && token.TokenType == TokenType.Recovery
             );
 
             if (tokenData == null)
@@ -74,7 +74,7 @@ namespace Token.API.Controllers
             tokenData.UserID = user_id;
             tokenData.TokenCreated = DateTime.Now;
             tokenData.TokenExpires = DateTime.Now.AddSeconds(TokenExpires);
-            tokenData.TokenType = TokenType.Default;
+            tokenData.TokenType = TokenType.Recovery;
 
             await _context.TokensData.AddAsync(tokenData);
             await _context.SaveChangesAsync();

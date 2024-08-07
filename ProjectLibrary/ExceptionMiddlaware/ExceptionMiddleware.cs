@@ -1,9 +1,10 @@
-﻿using Token.API.Models;
-using Token.API.Services;
-using Token.API.Services.LoggerService;
+﻿
+using Microsoft.AspNetCore.Http;
+using ProjectLibrary.Services;
+using ProjectLibrary.Services.LoggerService;
 using System.Net;
 
-namespace Token.API.ExceptionMiddleware
+namespace ProjectLibrary.ExceptionMiddleware
 {
     public class ExceptionMiddleware
     {
@@ -32,7 +33,7 @@ namespace Token.API.ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
             await context.Response.WriteAsync(
-                JsonResponceFormat<String>.GetResponce("error", context.Response.StatusCode, exception.Message, "")
+                JsonResponceFormat<String>.GetResponce(HttpStatusCode.InternalServerError, exception.Message, "")
             );
         }
     }
