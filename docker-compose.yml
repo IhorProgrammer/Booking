@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  logger-api:
+    container_name: logger_api
+    build:
+      context: ./Logger.API
+      dockerfile: Dockerfile
+    ports:
+      - "5080:8080"
+    networks:
+      - booking_network
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    
+  db_mysql:
+    container_name: db_mysql
+    image: mysql:8.0
+    ports:
+      - "3311:3306"
+    restart: always
+    environment:
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: rNZzq5U37DqJlNe
+      MYSQL_ROOT_PASSWORD: 4kDGQDYe4JxDjRd
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - booking_network
+
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8091:80"
+    environment:
+      PMA_HOST: db_mysql
+    depends_on:
+      - db_mysql
+    networks:
+      - booking_network
+
+networks:
+  booking_network:
+    driver: bridge
+    external: true
+
+volumes:
+  mysql_data:
