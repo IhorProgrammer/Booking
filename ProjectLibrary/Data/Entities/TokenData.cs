@@ -12,21 +12,20 @@ namespace ProjectLibrary.Data.Entities
     public class TokenData
     {
         [Key]
-        [MaxLength(36)]
         [Column("id")]
-        public String ID {  get; set; } = default!;
-        [Required]
+        public int ID {  get; set; }
         [MaxLength(36)]
         [Column("id_user")]
-        public String UserID { get; set; } = default!;
+        public String? UserID { get; set; }
         [Required]
         [Column("token_created")]
         public DateTime TokenCreated {  get; set; }
         [Required]
-        [Column("token_expires")]
-        public DateTime TokenExpires { get; set; }
+        [Column("token_used")]
+        public DateTime TokenUsed { get; set; }
         [Required]
-        [Column("token_type")]
-        public int TokenType { get; set; }
+        [Column("token")]
+        [MaxLength(36)]
+        public String Token { get; set; } = default!;
     }
 }

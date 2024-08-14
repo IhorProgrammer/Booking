@@ -15,7 +15,7 @@ using System.Text.Json.Serialization;
 
 namespace Client.API.Controllers
 {
-    [Route("api/client")]
+    [Route("")]
     [ApiController]
     public class ClientController : ControllerBase
     {
@@ -55,6 +55,13 @@ namespace Client.API.Controllers
 
             
             
+            return JsonResponceFormat<String>.GetResponce(HttpStatusCode.OK, "User information", JsonSerializer.Serialize(clientModel));
+        }
+
+        [HttpGet("recovery")]
+        public async Task<String> GetRecovery(string login)
+        {
+            throw new Exception("Сервер відправки повідомлень ще не створений");
             return JsonResponceFormat<String>.GetResponce(HttpStatusCode.OK, "User information", JsonSerializer.Serialize(clientModel));
         }
 
@@ -109,7 +116,5 @@ namespace Client.API.Controllers
 
             throw new Exception("Error");
         }
-
-
     }
 }
