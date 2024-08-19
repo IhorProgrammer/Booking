@@ -1,8 +1,9 @@
 ﻿
 using Microsoft.AspNetCore.Http;
-using ProjectLibrary.Services;
+using ProjectLibrary.Services.JsonResponce;
 using ProjectLibrary.Services.LoggerService;
 using System.Net;
+using System.Text.Json;
 
 namespace ProjectLibrary.ExceptionMiddleware
 {
@@ -33,7 +34,7 @@ namespace ProjectLibrary.ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
             await context.Response.WriteAsync(
-                JsonResponceFormat<String>.GetResponce(HttpStatusCode.InternalServerError, exception.Message, "")
+                JsonSerializer.Serialize(ResponceFormat.InternalServerError(exception.Message))
             );
         }
     }

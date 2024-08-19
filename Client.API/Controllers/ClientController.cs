@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Client.API.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -6,12 +7,16 @@ using Microsoft.EntityFrameworkCore;
 using ProjectLibrary.Data;
 using ProjectLibrary.Data.Entities;
 using ProjectLibrary.Models.DTO;
-using ProjectLibrary.Services;
+using ProjectLibrary.Models.EncryptionDecryptionModel;
+using ProjectLibrary.Services.AES;
 using ProjectLibrary.Services.Hash;
+using ProjectLibrary.Services.JsonResponce;
 using ProjectLibrary.Services.LoggerService;
+using ProjectLibrary.Services.TokenService;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Client.API.Controllers
 {
@@ -26,7 +31,6 @@ namespace Client.API.Controllers
         private static readonly HttpClient client = new HttpClient();
         private readonly IConfiguration _configuration;
 
-
         public ClientController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IConfiguration configuration)
         {
             _context = context;
@@ -36,46 +40,47 @@ namespace Client.API.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet]
-        public async Task<String> Get( string login, string password ) {
 
-            
-            ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync( user => user.Nickname.Equals(login) );
-            if (clientData == null) {
-                return JsonResponceFormat<String>.GetResponce(HttpStatusCode.BadRequest , "Login or password invalid", "");
-            }
+        /*
+         * Auth user
+         * {data: {login:"",password: ""}, user_agent: ""}
+        */
+        [HttpGet("{data}/{iv}")]
+        public async Task<object> Get(string data, string iv) {
+            Request.HttpContext.Response.ContentType = "application/json";
 
-            String dk = _hashService.HexString(clientData.Salt + password);
-            if( !dk.Equals(clientData.DerivedKey) )
-            {
-                return JsonResponceFormat<String>.GetResponce(HttpStatusCode.BadRequest, "Login or password invalid", "");
-            }
-            var clientModel = _mapper.Map<ClientModel>(clientData);
+            //Check token
+            TokenService tokenService = new TokenService(_configuration);
+            EncryptionDecryptionModel<AuthModel>? decryptionAuthModel = tokenService.DecryptionData<AuthModel>(Request, data, iv); ;
+            if (decryptionAuthModel == null) return ResponceFormat.BadRequest("token invalid");
+
+            //Get clientData
+            ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync( user => user.Nickname.Equals(decryptionAuthModel.Data.Login) );
+            if( clientData == null ) return ResponceFormat.BadRequest("Login or password invalid");
+            bool isValidate = clientData.ValidatePassword(decryptionAuthModel.Data.Password, _hashService);
+            if(!isValidate) return ResponceFormat.BadRequest("Login or password invalid");
 
 
-            
-            
-            return JsonResponceFormat<String>.GetResponce(HttpStatusCode.OK, "User information", JsonSerializer.Serialize(clientModel));
+            //Token Subscription
+            if (!tokenService.TokenSubscription(Request, decryptionAuthModel.UserAgent, clientData.ClientID))
+                return ResponceFormat.BadRequest("Login or password invalid");
+
+            ClientModel clientModel = _mapper.Map<ClientModel>(clientData);
+            return ResponceFormat.OK<ClientModel>("User information", clientModel);
         }
 
-        [HttpGet("recovery")]
-        public async Task<String> GetRecovery(string login)
-        {
-            throw new Exception("Сервер відправки повідомлень ще не створений");
-            return JsonResponceFormat<String>.GetResponce(HttpStatusCode.OK, "User information", JsonSerializer.Serialize(clientModel));
-        }
 
         [HttpPost]
-        public async Task<String> Post(ClientModel client)
-        { 
+        public async Task<object> Post(ClientModel client)
+        {
             if (!ModelState.IsValid)
             {
-                return JsonResponceFormat<ModelStateDictionary>.GetResponce(HttpStatusCode.BadRequest, "bad request", ModelState);
+                return ResponceFormat.BadRequest("bad request");
             }
 
-            if(!client.isValid())
+            if (!client.isValid())
             {
-                return JsonResponceFormat<String>.GetResponce(HttpStatusCode.BadRequest, "validate error", "");
+                return ResponceFormat.BadRequest("validate error");
             }
 
             var clientData = _mapper.Map<ClientData>(client);
@@ -88,27 +93,27 @@ namespace Client.API.Controllers
 
             await _context.SaveChangesAsync();
 
-            return JsonResponceFormat<String>.GetResponce(HttpStatusCode.Created, "user created", clientData.ClientID);
+            return ResponceFormat.Created("user created", clientData.ClientID);
         }
 
         [HttpDelete]
-        public async Task<String> Delete(String login, String password)
+        public async Task<object> Delete(string login, string password)
         {
             ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync(user => user.Nickname.Equals(login));
             if (clientData == null)
             {
-                return JsonResponceFormat<String>.GetResponce(HttpStatusCode.BadRequest, "Login or password invalid", "");
+                return ResponceFormat.BadRequest("Login or password invalid");
             }
-            String dk = _hashService.HexString(clientData.Salt + password);
+            string dk = _hashService.HexString(clientData.Salt + password);
             if (!dk.Equals(clientData.DerivedKey))
             {
-                return JsonResponceFormat<String>.GetResponce(HttpStatusCode.BadRequest, "Login or password invalid", "");
+                return ResponceFormat.BadRequest("Login or password invalid");
             }
 
-            if( clientData.ClientPasportData != null )
+            if (clientData.ClientPasportData != null)
             {
-                _context.ClientPasportData.Remove( clientData.ClientPasportData );
-                clientData.PasportID = null;  
+                _context.ClientPasportData.Remove(clientData.ClientPasportData);
+                clientData.PasportID = null;
             }
 
             //Зделать неактивным все даные (недвижимость, компании)

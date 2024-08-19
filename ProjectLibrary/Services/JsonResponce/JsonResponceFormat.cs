@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ProjectLibrary.Services
+namespace ProjectLibrary.Services.JsonResponce
 {
 
     public class JsonResponceFormat<T>
@@ -13,15 +13,15 @@ namespace ProjectLibrary.Services
         public MetaData Meta { get; set; } = default!;
 
 
-        public static string GetResponce(HttpStatusCode code, string message, T data)
-        {
-            var jf = new JsonResponceFormat<T>();
-            jf.Data = data;
-            jf.Meta = new MetaData((int)code, message );
-            string jsonString = JsonSerializer.Serialize<JsonResponceFormat<T>>(jf);
+        //public static string GetResponce(HttpStatusCode code, string message, T data)
+        //{
+        //    var jf = new JsonResponceFormat<T>();
+        //    jf.Data = data;
+        //    jf.Meta = new MetaData((int)code, message);
+        //    string jsonString = JsonSerializer.Serialize(jf);
 
-            return jsonString;
-        }
+        //    return jsonString;
+        //}
 
         public class MetaData
         {

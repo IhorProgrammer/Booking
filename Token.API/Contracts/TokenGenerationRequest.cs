@@ -26,8 +26,8 @@ namespace Token.API.Contracts
         {
             TokenData tokenData = new TokenData();
             tokenData.Token = Guid.NewGuid().ToString();
-            tokenData.TokenCreated = DateTime.Now;
-            tokenData.TokenUsed = DateTime.Now;
+            tokenData.TokenCreated = DateTime.UtcNow;
+            tokenData.TokenUsed = DateTime.UtcNow;
             tokenData.UserID = null;
             await _context.TokensData.AddAsync(tokenData);
             await _context.SaveChangesAsync();

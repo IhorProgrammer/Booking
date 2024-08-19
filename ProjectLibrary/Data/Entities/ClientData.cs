@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ProjectLibrary.Services.Hash;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ProjectLibrary.Data.Entities
@@ -72,5 +73,13 @@ namespace ProjectLibrary.Data.Entities
 
         [ForeignKey("PasportID")]
         public ClientPasportData? ClientPasportData { get; set; }
+
+
+        public bool ValidatePassword(string enteredPassword, IHashService hashService)
+        {
+            string enteredDerivedKey = hashService.HexString(Salt + enteredPassword);
+            return enteredDerivedKey.Equals(DerivedKey);
+        }
+
     }
 }

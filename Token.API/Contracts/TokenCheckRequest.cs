@@ -22,6 +22,8 @@ namespace Token.API.Contracts
             _appSettings = appSettings;
         }
 
+        
+
         public async Task<ClaimsPrincipal?> Check(string token, string userAgent) 
         {
             JwtSecurityToken? jwtSecurityToken = GetJwtSecurityToken(token);
@@ -71,6 +73,14 @@ namespace Token.API.Contracts
             }
         }
 
+        public string? GetSalt(string token)
+        {
+            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtToken = handler.ReadJwtToken(token);
+            string? salt = jwtToken.Claims.FirstOrDefault(c => c.Type == "salt_id")?.Value;
+            return salt;
+        }
+
         public JwtSecurityToken? GetJwtSecurityToken(string token)
         {
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
@@ -82,6 +92,9 @@ namespace Token.API.Contracts
         {
             int saltID = int.Parse(salt);
             TokenData? tokenData = await _context.TokensData.FindAsync(saltID);
+            if(tokenData == null) return null;
+            tokenData.TokenUsed = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
             return tokenData;
         }
 
