@@ -28,27 +28,21 @@ namespace Token.API.Contracts
         {
             JwtSecurityToken? jwtSecurityToken = GetJwtSecurityToken(token);
             if( jwtSecurityToken == null) return null;
-            string? salt = GetSaltFromToken(jwtSecurityToken);
-            if( salt == null ) return null;
-            TokenData? tokenData = await GetTokenData(salt);
+            string? tokenId = GetTokenIdFromToken(jwtSecurityToken);
+            if( tokenId == null ) return null;
+            TokenData? tokenData = await GetTokenData(tokenId);
             if( tokenData == null ) return null;
-            TokenOptionsModel options = new TokenOptionsModel();
-            if (int.TryParse(salt, out int value))
-            {
-                options.SaltID = value;
-            }
-            else 
-            {
-                throw new InvalidOperationException($"SaltID invalid: {salt}, {tokenData.ID}");
-            }
-            options.Token = tokenData.Token;
+            
             if (_appSettings.Secret == null) throw new ArgumentNullException("Secret key null");
+            TokenOptionsModel options = new TokenOptionsModel();
             options.SecretKey = _appSettings.Secret;
+            options.TokenID = tokenId;
+            options.Salt = tokenData.Salt;
             options.Created = tokenData.TokenCreated;
             options.UserAgent = userAgent;
             SymmetricSecurityKey key = options.GetSymmetricSecurityKey();
 
-            var validationParameters = new TokenValidationParameters
+            TokenValidationParameters validationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidIssuer = _appSettings.Issuer,
@@ -77,7 +71,7 @@ namespace Token.API.Contracts
         {
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
             JwtSecurityToken jwtToken = handler.ReadJwtToken(token);
-            string? salt = jwtToken.Claims.FirstOrDefault(c => c.Type == "salt_id")?.Value;
+            string? salt = jwtToken.Claims.FirstOrDefault(c => c.Type == "token_id")?.Value;
             return salt;
         }
 
@@ -88,19 +82,18 @@ namespace Token.API.Contracts
             return jsonToken;
         }
 
-        public async Task<TokenData?> GetTokenData (string salt)
+        public async Task<TokenData?> GetTokenData (string tokenId)
         {
-            int saltID = int.Parse(salt);
-            TokenData? tokenData = await _context.TokensData.FindAsync(saltID);
+            TokenData? tokenData = await _context.TokensData.FindAsync(tokenId);
             if(tokenData == null) return null;
             tokenData.TokenUsed = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return tokenData;
         }
 
-        public string? GetSaltFromToken(JwtSecurityToken token)
+        public string? GetTokenIdFromToken(JwtSecurityToken token)
         {
-            Claim? saltClaim = token.Claims.FirstOrDefault(c => c.Type == "salt_id");
+            Claim? saltClaim = token.Claims.FirstOrDefault(c => c.Type == "token_id");
             string? salt = saltClaim?.Value;
             return salt;
         }

@@ -17,15 +17,16 @@ namespace Token.API.Contracts
             _appSettings = appSettings;
             _context = context;
 
-            if (String.IsNullOrEmpty(_appSettings.Issuer)) throw new ArgumentNullException("Issuer null");
-            if (String.IsNullOrEmpty(_appSettings.Audience)) throw new ArgumentNullException("Audience null");
-            if (_appSettings.Secret == null) throw new ArgumentNullException("Scret key null");
+            if (String.IsNullOrEmpty(_appSettings.Issuer)) throw new ArgumentNullException("Issuer null", nameof(_appSettings.Issuer));
+            if (String.IsNullOrEmpty(_appSettings.Audience)) throw new ArgumentNullException("Audience null", nameof(_appSettings.Issuer));
+            if (_appSettings.Secret == null) throw new ArgumentNullException("Scret key null", nameof(_appSettings.Secret));
         }
 
         public async Task<TokenData> AddTokenToDB()
         {
             TokenData tokenData = new TokenData();
-            tokenData.Token = Guid.NewGuid().ToString();
+            tokenData.TokenID = Guid.NewGuid().ToString();
+            tokenData.Salt = Guid.NewGuid().ToString();
             tokenData.TokenCreated = DateTime.UtcNow;
             tokenData.TokenUsed = DateTime.UtcNow;
             tokenData.UserID = null;
@@ -39,18 +40,18 @@ namespace Token.API.Contracts
 
 
             TokenData tokenData = await AddTokenToDB();
-            TokenOptionsModel options = new TokenOptionsModel();
+            TokenOptionsModel options = new();
             options.UserAgent = userAgent;
-            options.SaltID = tokenData.ID;
+            options.TokenID = tokenData.TokenID;
             if (_appSettings.Secret == null) throw new ArgumentNullException("Scret key null");
             options.SecretKey = _appSettings.Secret;
-            options.Token = tokenData.Token;
+            options.Salt = tokenData.Salt;
             options.Created = tokenData.TokenCreated;
 
             return new TokenGenerationResponce()
             {
-                token = GenerateToken(GenerateIdentity(options.SaltID.ToString()), options),
-                salt = options.Token,
+                token = GenerateToken(GenerateIdentity(options.TokenID), options),
+                salt = options.Salt,
             };
             }
 
@@ -67,11 +68,11 @@ namespace Token.API.Contracts
             return encodedJwt;
         }
 
-        private ClaimsIdentity GenerateIdentity(string salt)
+        private ClaimsIdentity GenerateIdentity(string token_id)
         {
             var claims = new List<Claim>
             {
-                new Claim("salt_id", salt),
+                new Claim("token_id", token_id),
             };
             ClaimsIdentity claimsIdentity =
             new ClaimsIdentity(claims, "Token");

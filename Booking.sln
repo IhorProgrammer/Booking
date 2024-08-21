@@ -22,7 +22,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Email.API", "Email.API\Email.API.csproj", "{BA8268DE-0759-47B0-9A13-CC2CD7D0C7E3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Email.API", "Email.API\Email.API.csproj", "{BA8268DE-0759-47B0-9A13-CC2CD7D0C7E3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D0C9B359-1FB7-45C2-885D-4D214A67AB9F} = {D0C9B359-1FB7-45C2-885D-4D214A67AB9F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

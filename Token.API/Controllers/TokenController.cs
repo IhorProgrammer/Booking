@@ -55,17 +55,17 @@ namespace Token.API.Controllers
             TokenCheckRequest tokenCheckRequest = new TokenCheckRequest(_context, _appSettings);
             ClaimsPrincipal? principal = await tokenCheckRequest.Check(token, userAgent);
 
-            Claim? saltClaim = principal?.Claims.FirstOrDefault(c => c.Type == "salt_id");
-            string? salt = saltClaim?.Value;
-            if (salt == null)
+            Claim? tokenIdClaim = principal?.Claims.FirstOrDefault(c => c.Type == "token_id");
+            string? tokenId = tokenIdClaim?.Value;
+            if (tokenId == null)
             {
                 //send email несанкиционированый доступ
                 throw new InvalidOperationException("Email Service");
             }
-            TokenData? tokenData = await tokenCheckRequest.GetTokenData(salt);
+            TokenData? tokenData = await tokenCheckRequest.GetTokenData(tokenId);
             if (tokenData == null) throw new ArgumentNullException("TokenData null");
             if( tokenData.UserID == null ) return ResponceFormat.Unauthorized("token validation");
-            return ResponceFormat.OK("token validation", tokenData.Token);
+            return ResponceFormat.OK("token validation", tokenData.Salt);
         }
         
 
@@ -89,7 +89,7 @@ namespace Token.API.Controllers
             //розшифрування тексту
 
             
-            string textJson = AES.Decrypt(Convert.FromBase64String(Uri.UnescapeDataString(data)), Convert.FromBase64String(Uri.UnescapeDataString(iv)), tokenData.Token);
+            string textJson = AES.Decrypt(Convert.FromBase64String(Uri.UnescapeDataString(data)), Convert.FromBase64String(Uri.UnescapeDataString(iv)), tokenData.Salt);
             DecryptionUserAgentModel? decryptionModel = JsonSerializer.Deserialize<DecryptionUserAgentModel>(textJson);
             if (decryptionModel == null) throw new ArgumentNullException("DecryptionModel null");
             //перевірка userAgent
@@ -117,8 +117,8 @@ namespace Token.API.Controllers
         {
             if (String.IsNullOrEmpty(userAgent)) return ResponceFormat.BadRequest("user agent empty");
             if (_appSettings == null) throw new ArgumentNullException("_appSettings null");
-            var tokenG = new TokenGenerationRequest(_context, _appSettings);
-            var res = await tokenG.GetToken(userAgent);
+            TokenGenerationRequest tokenG = new TokenGenerationRequest(_context, _appSettings);
+            TokenGenerationResponce res = await tokenG.GetToken(userAgent);
             return ResponceFormat.OK("token genereted", res);
         }
 
@@ -134,15 +134,15 @@ namespace Token.API.Controllers
             string? token = authHeader.Substring("Bearer ".Length).Trim();
             //Check token
             TokenCheckRequest tokenCheckRequest = new TokenCheckRequest(_context, _appSettings);
-            //Get salt
+            //Get token_id
             ClaimsPrincipal? principal = await tokenCheckRequest.Check(token, requestModel.UserAgent);
             if (principal == null) return ResponceFormat.Unauthorized("token invalid");
-            Claim? saltClaim = principal?.Claims.FirstOrDefault(c => c.Type == "salt_id");
-            string? salt = saltClaim?.Value;
-            if (salt == null) throw new ArgumentNullException($"salt empty ${salt}");
+            Claim? tokenIdClaim = principal?.Claims.FirstOrDefault(c => c.Type == "token_id");
+            string? tokenId = tokenIdClaim?.Value;
+            if (tokenId == null) throw new ArgumentNullException($"tokenId empty ${tokenId}");
             //find tokenData and update tokenUsed
-            TokenData? tokenData = await tokenCheckRequest.GetTokenData(salt);
-            if (tokenData == null) throw new ArgumentNullException($"TokenData null ${salt}");
+            TokenData? tokenData = await tokenCheckRequest.GetTokenData(tokenId);
+            if (tokenData == null) throw new ArgumentNullException($"TokenData null ${tokenId}");
             if (tokenData.UserID != null)
             {
                 throw new InvalidOperationException("Send Email");
@@ -156,15 +156,15 @@ namespace Token.API.Controllers
             return ResponceFormat.OK("token subscribe", "true");
         }
 
-        [HttpDelete]
-        public async Task<Object> Delete(int tokenId, String userId)
-        {
-            if (String.IsNullOrEmpty(userId)) return ResponceFormat.BadRequest("bad request");
-            TokenData? tokenData = _context.TokensData.FirstOrDefault(t => t.UserID == userId && t.ID == tokenId);
-            if (tokenData == null) return ResponceFormat.BadRequest("bad request");
-            _context.TokensData.Remove(tokenData);
-            await _context.SaveChangesAsync();
-            return ResponceFormat.OK("token deleted", true);
-        }
+        //[HttpDelete]
+        //public async Task<Object> Delete(String tokenId, String userId)
+        //{
+        //    if (String.IsNullOrEmpty(userId)) return ResponceFormat.BadRequest("bad request");
+        //    TokenData? tokenData = _context.TokensData.FirstOrDefault(t => t.UserID == userId && t.ID == tokenId);
+        //    if (tokenData == null) return ResponceFormat.BadRequest("bad request");
+        //    _context.TokensData.Remove(tokenData);
+        //    await _context.SaveChangesAsync();
+        //    return ResponceFormat.OK("token deleted", true);
+        //}
     }
 }

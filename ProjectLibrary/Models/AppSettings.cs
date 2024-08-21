@@ -12,5 +12,10 @@ namespace ProjectLibrary.Models
         public string? Issuer { get; set; }
         public string? Audience { get; set; }
 
+        public string? EmailFrom { get; set; }
+        public string? EmailFromPassword { get; set; }
+        public string? FromName { get; set; }
+
+
     }
 }

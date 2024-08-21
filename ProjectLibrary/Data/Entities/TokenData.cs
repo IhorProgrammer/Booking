@@ -12,8 +12,9 @@ namespace ProjectLibrary.Data.Entities
     public class TokenData
     {
         [Key]
+        [MaxLength(36)]
         [Column("id")]
-        public int ID {  get; set; }
+        public String TokenID { get; set; } = default!;
         [MaxLength(36)]
         [Column("id_user")]
         public String? UserID { get; set; }
@@ -24,8 +25,8 @@ namespace ProjectLibrary.Data.Entities
         [Column("token_used")]
         public DateTime TokenUsed { get; set; }
         [Required]
-        [Column("token")]
+        [Column("salt")]
         [MaxLength(36)]
-        public String Token { get; set; } = default!;
+        public String Salt { get; set; } = default!;
     }
 }

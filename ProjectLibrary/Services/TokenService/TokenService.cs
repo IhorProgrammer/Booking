@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using ProjectLibrary.Models.EncryptionDecryptionModel;
 using ProjectLibrary.Services.JsonResponce;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json;
 
@@ -95,5 +96,12 @@ namespace ProjectLibrary.Services.TokenService
             }
         }
 
+        public string? GetTokenId(string jwt)
+        {
+            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtToken = handler.ReadJwtToken(jwt);
+            string? salt = jwtToken.Claims.FirstOrDefault(c => c.Type == "token_id")?.Value;
+            return salt;
+        }
     }
 }
