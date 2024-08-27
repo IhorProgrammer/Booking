@@ -15,7 +15,7 @@ namespace ProjectLibrary.Data.Entities
         [MaxLength(36)]
         [Required]
         [Column("avatar")]
-        public string Avatar { get; set; } = default!;
+        public string AvatarName { get; set; } = default!;
 
         [MaxLength(32)]
         [Required]

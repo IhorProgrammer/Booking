@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Alert</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        h1 {
+            color: #d9534f;
+            font-size: 24px;
+            margin-bottom: 10px;
+            animation: slideIn 0.8s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+            animation: fadeIn 1s ease-out;
+        }
+        .important {
+            font-weight: bold;
+            color: #d9534f;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #777;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .footer a:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Security Alert: Unauthorized Access Attempt</h1>
+        <p>Dear <strong>Client</strong>,</p>
+        <p>We have detected an attempt to log into your account using unique data. This may indicate that tracking software is installed on your computer.</p>
+        <p class="important">Please log out of your account immediately and try to log in from another device.</p>
+        <div class="footer">
+            <p>Thank you for your prompt attention to this matter. If you have any questions, please contact our support team.</p>
+            <p>Best regards,<br>
+            The <strong>Booking</strong> Team</p>
+        </div>
+    </div>
+</body>
+</html>

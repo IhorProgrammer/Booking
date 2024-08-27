@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace ProjectLibrary.Services.JsonResponce
 {
 
-    public class JsonResponceFormat<T>
+    public class JsonResponseFormat<T>
     {
         [JsonPropertyName("data")]
         public T Data { get; set; } = default!;
@@ -22,6 +22,8 @@ namespace ProjectLibrary.Services.JsonResponce
 
         //    return jsonString;
         //}
+
+
 
         public class MetaData
         {

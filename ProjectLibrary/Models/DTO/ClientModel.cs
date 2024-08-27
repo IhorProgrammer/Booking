@@ -1,5 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Http;
+using ProjectLibrary.Services.FileManager;
+using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
+using System.Numerics;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
@@ -27,6 +31,36 @@ namespace ProjectLibrary.Models.DTO
         [JsonPropertyName("password")]
         public string Password { get; set; } = default!;
 
+
+        public static async Task<ClientModel> ToClientModel(IFormCollection form, IFormFileCollection formFiles)
+        {
+            ClientModel clientModel = new ClientModel();
+            
+            
+            string? realName = form["real_name"];
+            clientModel.RealName = realName ?? throw new ArgumentNullException(nameof(realName), "ToClientModel Error");
+            string? nickname = form["nickname"];
+            clientModel.Nickname = nickname ?? throw new ArgumentNullException(nameof(nickname), "ToClientModel Error");
+            string? email = form["email"];
+            clientModel.Email = email ?? throw new ArgumentNullException(nameof(email), "ToClientModel Error"); 
+            string? phone = form["phone"];
+            clientModel.Phone = phone ?? throw new ArgumentNullException(nameof(phone), "ToClientModel Error"); 
+            string? birthday = form["birthday"];
+            clientModel.Birthday = DateTime.Parse(birthday ?? throw new ArgumentNullException(nameof(birthday), "ToClientModel Error")); 
+            string? gender = form["gender"];
+            clientModel.Gender = Boolean.Parse(gender ?? throw new ArgumentNullException(nameof(gender), "ToClientModel Error"));
+            string? citizenship = form["citizenship"];
+            clientModel.Citizenship = citizenship ?? throw new ArgumentNullException(nameof(citizenship), "ToClientModel Error"); 
+            string? password = form["password"];
+            clientModel.Password = password ?? throw new ArgumentNullException(nameof(password), "ToClientModel Error"); ;
+
+
+
+            clientModel.Avatar = await FileManager.SaveFile(formFiles[0], "image");
+             
+             
+            return clientModel;
+        }
 
         public bool isValid()
         {

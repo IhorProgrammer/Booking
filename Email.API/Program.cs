@@ -44,8 +44,8 @@ builder.Services.AddSwaggerGen(options => {
     });
 });
 
-
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine(connectionString);
 builder.Services.AddDbContext<DBContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
 builder.Services.AddSingleton<IEmail, Email.API.Services.Email.Email>();

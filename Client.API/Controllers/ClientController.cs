@@ -12,8 +12,11 @@ using ProjectLibrary.Services.AES;
 using ProjectLibrary.Services.Hash;
 using ProjectLibrary.Services.JsonResponce;
 using ProjectLibrary.Services.LoggerService;
+using ProjectLibrary.Services.MessageSender;
 using ProjectLibrary.Services.TokenService;
 using System.Net;
+using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -28,60 +31,73 @@ namespace Client.API.Controllers
         private readonly IHashService _hashService;
         private readonly ILoggerManager _loggerManager;
         private readonly IMapper _mapper;
-        private static readonly HttpClient client = new HttpClient();
         private readonly IConfiguration _configuration;
+        private readonly IMessageSender _messageSender;
+        private static readonly HttpClient client = new HttpClient();
 
-        public ClientController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IConfiguration configuration)
+        public ClientController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IConfiguration configuration, IMessageSender messageSender)
         {
             _context = context;
             _hashService = hashService;
             _loggerManager = loggerManager;
             _mapper = mapper;
             _configuration = configuration;
+            _messageSender = messageSender;
         }
 
 
-        /*
-         * Auth user
-         * {data: {login:"",password: ""}, user_agent: ""}
-        */
+        //{data: {login:"",password: ""}, user_agent: ""}
         [HttpGet("{data}/{iv}")]
-        public async Task<object> Get(string data, string iv) {
-            Request.HttpContext.Response.ContentType = "application/json";
-
+        public async Task<object> Get(string data, string iv)
+        {
             //Check token
             TokenService tokenService = new TokenService(_configuration);
             EncryptionDecryptionModel<AuthModel>? decryptionAuthModel = tokenService.DecryptionData<AuthModel>(Request, data, iv); ;
-            if (decryptionAuthModel == null) return ResponceFormat.BadRequest("token invalid");
+            if (decryptionAuthModel == null) return ResponseFormat.BadRequest("token invalid");
 
             //Get clientData
-            ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync( user => user.Nickname.Equals(decryptionAuthModel.Data.Login) );
-            if( clientData == null ) return ResponceFormat.BadRequest("Login or password invalid");
+            ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync(user => user.Nickname.Equals(decryptionAuthModel.Data.Login));
+            if (clientData == null) return ResponseFormat.BadRequest("Login or password invalid");
             bool isValidate = clientData.ValidatePassword(decryptionAuthModel.Data.Password, _hashService);
-            if(!isValidate) return ResponceFormat.BadRequest("Login or password invalid");
+            if (!isValidate) return ResponseFormat.BadRequest("Login or password invalid");
+
 
 
             //Token Subscription
             if (!tokenService.TokenSubscription(Request, decryptionAuthModel.UserAgent, clientData.ClientID))
-                return ResponceFormat.BadRequest("Login or password invalid");
+            {
+                return ResponseFormat.BadRequest("Login or password invalid");
+            }
 
+            string? token = tokenService.GetJWTTokenByRequest(Request);
+            _messageSender.Send(token ?? "", MessageSenderTypes.Authorization);
             ClientModel clientModel = _mapper.Map<ClientModel>(clientData);
-            return ResponceFormat.OK<ClientModel>("User information", clientModel);
+            return ResponseFormat.OK<ClientModel>("User information", clientModel);
         }
 
-
-        [HttpPost]
-        public async Task<object> Post(ClientModel client)
+        [HttpPost("{userAgent}")]
+        public async Task<object> Post(string userAgent)
         {
             if (!ModelState.IsValid)
             {
-                return ResponceFormat.BadRequest("bad request");
+                return ResponseFormat.BadRequest("bad request");
             }
+            ClientModel client = await ClientModel.ToClientModel(Request.Form, Request.Form.Files);
 
             if (!client.isValid())
             {
-                return ResponceFormat.BadRequest("validate error");
+                //Delete File
+                return ResponseFormat.BadRequest("validate error");
             }
+
+            TokenService tokenService = new TokenService(_configuration);
+            string? jwt = tokenService.GetJWTTokenByRequest(Request);
+            if (jwt == null)
+            {
+                //Delete File
+                return ResponseFormat.BadRequest("token invalid");
+            }
+
 
             var clientData = _mapper.Map<ClientData>(client);
             clientData.ClientID = Guid.NewGuid().ToString();
@@ -93,7 +109,33 @@ namespace Client.API.Controllers
 
             await _context.SaveChangesAsync();
 
-            return ResponceFormat.Created("user created", clientData.ClientID);
+            using (HttpClient httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
+
+                var model = new { email = clientData.Email, id_user = clientData.ClientID };
+                var jsonContent = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
+
+                string? connection = _configuration.GetConnectionString("EmailServerConnection");
+                if (connection == null)
+                {
+                    _loggerManager.LogError(new ArgumentNullException("EmailServerConnection null", nameof(connection)));
+                    return ResponseFormat.InternalServerError("Server Error");
+                }
+                HttpResponseMessage response = await httpClient.PostAsync(connection, jsonContent);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _messageSender.Send(jwt, MessageSenderTypes.Authorization);
+                    return ResponseFormat.Created("user created", clientData.ClientID);
+                }
+                else
+                {
+                    _messageSender.Send(jwt, MessageSenderTypes.Registration);
+                }
+            }
+
+            return ResponseFormat.Created("user and email created", clientData.ClientID);
         }
 
         [HttpDelete]
@@ -102,12 +144,12 @@ namespace Client.API.Controllers
             ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync(user => user.Nickname.Equals(login));
             if (clientData == null)
             {
-                return ResponceFormat.BadRequest("Login or password invalid");
+                return ResponseFormat.BadRequest("Login or password invalid");
             }
             string dk = _hashService.HexString(clientData.Salt + password);
             if (!dk.Equals(clientData.DerivedKey))
             {
-                return ResponceFormat.BadRequest("Login or password invalid");
+                return ResponseFormat.BadRequest("Login or password invalid");
             }
 
             if (clientData.ClientPasportData != null)

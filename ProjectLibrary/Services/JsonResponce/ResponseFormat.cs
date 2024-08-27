@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ProjectLibrary.Services.JsonResponce
 {
-    public class ResponceFormat
+    public class ResponseFormat
     {
 
         public static void SettingResponce( HttpRequest httpRequest )
@@ -17,34 +17,34 @@ namespace ProjectLibrary.Services.JsonResponce
             httpRequest.ContentType = "application/json";
         }
 
-        public static JsonResponceFormat<T> OK<T>(string message, T data)
+        public static JsonResponseFormat<T> OK<T>(string message, T data)
         {
             return GetResponceJson(HttpStatusCode.OK, message, data);
         }
 
-        public static JsonResponceFormat<string> BadRequest(string message)
+        public static JsonResponseFormat<string> BadRequest(string message)
         {
             return GetResponceJson(HttpStatusCode.BadRequest, message, "");
         }
 
-        public static JsonResponceFormat<string> Unauthorized(string message)
+        public static JsonResponseFormat<string> Unauthorized(string message)
         {
             return GetResponceJson(HttpStatusCode.Unauthorized, message, "");
         }
-        public static JsonResponceFormat<string> InternalServerError(string message)
+        public static JsonResponseFormat<string> InternalServerError(string message)
         {
             return GetResponceJson(HttpStatusCode.InternalServerError, message, "");
         }
-        public static JsonResponceFormat<T> Created<T>(string message, T data)
+        public static JsonResponseFormat<T> Created<T>(string message, T data)
         {
             return GetResponceJson(HttpStatusCode.Created, message, data);
         }
         
-        private static JsonResponceFormat<T> GetResponceJson<T>(HttpStatusCode code, string message, T data)
+        private static JsonResponseFormat<T> GetResponceJson<T>(HttpStatusCode code, string message, T data)
         {
-            var jf = new JsonResponceFormat<T>();
+            var jf = new JsonResponseFormat<T>();
             jf.Data = data;
-            jf.Meta = new JsonResponceFormat<T>.MetaData((int)code, message);
+            jf.Meta = new JsonResponseFormat<T>.MetaData((int)code, message);
             return jf;
         }
 

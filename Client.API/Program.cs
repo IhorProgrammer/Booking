@@ -5,12 +5,24 @@ using ProjectLibrary.ExceptionMiddleware;
 using ProjectLibrary.Models.Mapping;
 using ProjectLibrary.Services.Hash;
 using ProjectLibrary.Services.LoggerService;
-using ProjectLibrary.Services.TokenService;
+using ProjectLibrary.Services.MessageSender;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -49,12 +61,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<DBContext>( options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 builder.Services.AddSingleton<IHashService, Md5HashService>();
 builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
+builder.Services.AddSingleton<IMessageSender, MessageSender>();
 
 
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
-
+app.UseCors("AllowAllOrigins");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

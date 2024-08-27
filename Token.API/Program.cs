@@ -10,6 +10,7 @@ using ProjectLibrary.Models;
 using ProjectLibrary.Models.Mapping;
 using ProjectLibrary.Services.Hash;
 using ProjectLibrary.Services.LoggerService;
+using ProjectLibrary.Services.MessageSender;
 using System.Reflection.PortableExecutable;
 using System.Xml.Linq;
 using Token.API.Models;
@@ -58,6 +59,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<DBContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 builder.Services.AddSingleton<IHashService, Md5HashService>();
 builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
+builder.Services.AddSingleton<IMessageSender, MessageSender>();
 
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(nameof(AppSettings)));
 

@@ -30,7 +30,7 @@ namespace ProjectLibrary.Services.LoggerService
             
             if (connection != null)
             {
-                _httpClient.PostAsJsonAsync(connection, logModel).Wait();
+                _httpClient.PostAsJsonAsync(connection, logModel);
             }
         }
 

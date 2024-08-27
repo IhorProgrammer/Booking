@@ -53,7 +53,7 @@ namespace ProjectLibrary.Services.TokenService
                 HttpResponseMessage response = httpClient.PutAsync(connection, jsonContent).Result;
                 string? res = response.Content.ReadAsStringAsync().Result;
                 if (res == null) throw new ArgumentNullException("Response tokenService == null. JsonData:" + jsonData);
-                JsonResponceFormat<string>? jsonResponce = JsonSerializer.Deserialize<JsonResponceFormat<string>>(res);
+                JsonResponseFormat<string>? jsonResponce = JsonSerializer.Deserialize<JsonResponseFormat<string>>(res);
                 if (jsonResponce == null || (jsonResponce != null && jsonResponce.Meta.Code != 200)) return false;
                 return true;
             }
@@ -83,7 +83,7 @@ namespace ProjectLibrary.Services.TokenService
 
                 string? decrRes = GetDecryptionJson(jwt, encryptionText, iv);
                 if (decrRes == null) throw new ArgumentException("Token invalid");
-                JsonResponceFormat<string>? jsonResponceFormat = JsonSerializer.Deserialize<JsonResponceFormat<string>>(decrRes);
+                JsonResponseFormat<string>? jsonResponceFormat = JsonSerializer.Deserialize<JsonResponseFormat<string>>(decrRes);
                 if (jsonResponceFormat == null) throw new ArgumentException("JsonResponceFormat null");
                 if (jsonResponceFormat.Meta.Code != 200) throw new ArgumentException("Token invalid");
                 EncryptionDecryptionModel<T>? deserialize = JsonSerializer.Deserialize<EncryptionDecryptionModel<T>>(jsonResponceFormat.Data);

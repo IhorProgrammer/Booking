@@ -1,10 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-COPY ../ProjectLibrary/ProjectLibrary.csproj ./
-COPY . ./
-RUN dotnet restore
-RUN dotnet publish -c Release -o /app/out
+COPY ./ProjectLibrary ./ProjectLibrary
+COPY ./Email.API ./Email.API
+RUN dotnet restore ./Email.API/Email.API.csproj
+RUN dotnet publish ./Email.API/Email.API.csproj -c Release -o /app/out
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app

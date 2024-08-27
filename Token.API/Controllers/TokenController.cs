@@ -10,6 +10,7 @@ using ProjectLibrary.Services.AES;
 using ProjectLibrary.Services.Hash;
 using ProjectLibrary.Services.JsonResponce;
 using ProjectLibrary.Services.LoggerService;
+using ProjectLibrary.Services.MessageSender;
 using System.Collections;
 using System.Net;
 using System.Net.Mime;
@@ -29,17 +30,18 @@ namespace Token.API.Controllers
         private readonly ILoggerManager _loggerManager;
         private readonly IMapper _mapper;
         private readonly AppSettings _appSettings;
-
+        private readonly IMessageSender _messageSender;
         private const int TokenExpires = 86400;
 
 
-        public TokenController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IOptions<AppSettings> appSettings)
+        public TokenController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IOptions<AppSettings> appSettings, IMessageSender messageSender)
         {
             _context = context;
             _hashService = hashService;
             _loggerManager = loggerManager;
             _mapper = mapper;
             _appSettings = appSettings.Value;
+            _messageSender = messageSender;
         }
 
         [HttpGet("{userAgent}")]
@@ -48,7 +50,7 @@ namespace Token.API.Controllers
             var authHeader = Request.Headers["Authorization"].ToString();
             if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
             {
-                return ResponceFormat.Unauthorized("token empty");
+                return ResponseFormat.Unauthorized("token empty");
             }
             string? token = authHeader.Substring("Bearer ".Length).Trim();
             
@@ -64,8 +66,8 @@ namespace Token.API.Controllers
             }
             TokenData? tokenData = await tokenCheckRequest.GetTokenData(tokenId);
             if (tokenData == null) throw new ArgumentNullException("TokenData null");
-            if( tokenData.UserID == null ) return ResponceFormat.Unauthorized("token validation");
-            return ResponceFormat.OK("token validation", tokenData.Salt);
+            if( tokenData.UserID == null ) return ResponseFormat.Unauthorized("token validation");
+            return ResponseFormat.OK("token validation", tokenData.Salt);
         }
         
 
@@ -76,7 +78,7 @@ namespace Token.API.Controllers
             var authHeader = Request.Headers["Authorization"].ToString();
             if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
             {
-                return ResponceFormat.Unauthorized("token empty");
+                return ResponseFormat.Unauthorized("token empty");
             }
             string? token = authHeader.Substring("Bearer ".Length).Trim();
 
@@ -97,7 +99,7 @@ namespace Token.API.Controllers
             if(principal == null) throw new ArgumentNullException("UserAgent or token invalid");
 
 
-            return ResponceFormat.OK("data decoded", textJson);
+            return ResponseFormat.OK("data decoded", textJson);
         }
 
         [HttpGet("encryption/{data}/{token}")]
@@ -108,18 +110,18 @@ namespace Token.API.Controllers
             string encrypted = Convert.ToBase64String(res.encrypted);
 
             var resN = new EncryptionResponceModel() { IV = Uri.EscapeDataString(iv), Encrypted = Uri.EscapeDataString(encrypted) };
-            return ResponceFormat.OK<EncryptionResponceModel>("data encoded", resN);
+            return ResponseFormat.OK<EncryptionResponceModel>("data encoded", resN);
         }
 
 
         [HttpPost]
         public async Task<Object> Post(String userAgent)
         {
-            if (String.IsNullOrEmpty(userAgent)) return ResponceFormat.BadRequest("user agent empty");
+            if (String.IsNullOrEmpty(userAgent)) return ResponseFormat.BadRequest("user agent empty");
             if (_appSettings == null) throw new ArgumentNullException("_appSettings null");
             TokenGenerationRequest tokenG = new TokenGenerationRequest(_context, _appSettings);
             TokenGenerationResponce res = await tokenG.GetToken(userAgent);
-            return ResponceFormat.OK("token genereted", res);
+            return ResponseFormat.OK("token genereted", res);
         }
 
         [HttpPut]
@@ -129,14 +131,14 @@ namespace Token.API.Controllers
             var authHeader = Request.Headers["Authorization"].ToString();
             if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
             {
-                return ResponceFormat.Unauthorized("token empty");
+                return ResponseFormat.Unauthorized("token empty");
             }
             string? token = authHeader.Substring("Bearer ".Length).Trim();
             //Check token
             TokenCheckRequest tokenCheckRequest = new TokenCheckRequest(_context, _appSettings);
             //Get token_id
             ClaimsPrincipal? principal = await tokenCheckRequest.Check(token, requestModel.UserAgent);
-            if (principal == null) return ResponceFormat.Unauthorized("token invalid");
+            if (principal == null) return ResponseFormat.Unauthorized("token invalid");
             Claim? tokenIdClaim = principal?.Claims.FirstOrDefault(c => c.Type == "token_id");
             string? tokenId = tokenIdClaim?.Value;
             if (tokenId == null) throw new ArgumentNullException($"tokenId empty ${tokenId}");
@@ -145,15 +147,18 @@ namespace Token.API.Controllers
             if (tokenData == null) throw new ArgumentNullException($"TokenData null ${tokenId}");
             if (tokenData.UserID != null)
             {
-                throw new InvalidOperationException("Send Email");
-                //return ResponceFormat.Unauthorized("User isn't empty");
+                _messageSender.Send(token, MessageSenderTypes.LoginAgain);
+                return ResponseFormat.Unauthorized("User isn't empty");
             }
 
             tokenData.UserID = requestModel.UserId;
             tokenData.TokenUsed = DateTime.UtcNow;
+
+
+
             await _context.SaveChangesAsync();
             
-            return ResponceFormat.OK("token subscribe", "true");
+            return ResponseFormat.OK("token subscribe", "true");
         }
 
         //[HttpDelete]

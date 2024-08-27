@@ -24,6 +24,7 @@ namespace ProjectLibrary.ExceptionMiddleware
             }
             catch (Exception ex)
             {
+                
                 _logger.LogError(ex);
                 await HandleExceptionAsync(httpContext, ex);
             }
@@ -34,7 +35,7 @@ namespace ProjectLibrary.ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
             await context.Response.WriteAsync(
-                JsonSerializer.Serialize(ResponceFormat.InternalServerError(exception.Message))
+                JsonSerializer.Serialize(ResponseFormat.InternalServerError(exception.Message))
             );
         }
     }
