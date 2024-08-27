@@ -26,8 +26,6 @@ services:
         - ASPNETCORE_ENVIRONMENT=Development
         - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=emails;user=admin;password=rNZzq5U37DqJlNe;
         - ConnectionStrings__LoggerServerConnection=http://localhost:5080
-        - AppSettings__EmailFrom=ihor.kuzubov@gmail.com
-        - AppSettings__EmailFromPassword=cfxh ndqq kwgt dlvk
         - AppSettings__FromName=Booking2
 
   db_mysql:
