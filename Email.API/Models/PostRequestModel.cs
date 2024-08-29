@@ -8,5 +8,8 @@ namespace Email.API.Models
         public string Email { get; set; } = default!;
         [JsonPropertyName("id_user")]
         public string UserID { get; set; } = default!;
+        [JsonPropertyName("id_token")]
+        public string? TokenID { get; set; }
+
     }
 }

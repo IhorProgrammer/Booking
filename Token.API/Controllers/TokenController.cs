@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using ProjectLibrary.Data;
 using ProjectLibrary.Data.Entities;
@@ -11,10 +12,12 @@ using ProjectLibrary.Services.Hash;
 using ProjectLibrary.Services.JsonResponce;
 using ProjectLibrary.Services.LoggerService;
 using ProjectLibrary.Services.MessageSender;
+using ProjectLibrary.Services.TokenService;
 using System.Collections;
 using System.Net;
 using System.Net.Mime;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using Token.API.Contracts;
 using Token.API.Models;
@@ -32,9 +35,10 @@ namespace Token.API.Controllers
         private readonly AppSettings _appSettings;
         private readonly IMessageSender _messageSender;
         private const int TokenExpires = 86400;
+        private readonly IConfiguration _configuration;
 
 
-        public TokenController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IOptions<AppSettings> appSettings, IMessageSender messageSender)
+        public TokenController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IOptions<AppSettings> appSettings, IMessageSender messageSender, IConfiguration configuration)
         {
             _context = context;
             _hashService = hashService;
@@ -42,6 +46,7 @@ namespace Token.API.Controllers
             _mapper = mapper;
             _appSettings = appSettings.Value;
             _messageSender = messageSender;
+            _configuration = configuration;
         }
 
         [HttpGet("{userAgent}")]
@@ -129,19 +134,27 @@ namespace Token.API.Controllers
         {
             //Get jwt token
             var authHeader = Request.Headers["Authorization"].ToString();
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-            {
-                return ResponseFormat.Unauthorized("token empty");
-            }
-            string? token = authHeader.Substring("Bearer ".Length).Trim();
-            //Check token
+            string? token = null;
+            string? tokenId = null;
             TokenCheckRequest tokenCheckRequest = new TokenCheckRequest(_context, _appSettings);
             //Get token_id
-            ClaimsPrincipal? principal = await tokenCheckRequest.Check(token, requestModel.UserAgent);
-            if (principal == null) return ResponseFormat.Unauthorized("token invalid");
-            Claim? tokenIdClaim = principal?.Claims.FirstOrDefault(c => c.Type == "token_id");
-            string? tokenId = tokenIdClaim?.Value;
-            if (tokenId == null) throw new ArgumentNullException($"tokenId empty ${tokenId}");
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            {
+                token = authHeader.Substring("Bearer ".Length).Trim();
+                ClaimsPrincipal? principal = await tokenCheckRequest.Check(token, requestModel.UserAgent);
+                if (principal == null) return ResponseFormat.Unauthorized("token invalid");
+                Claim? tokenIdClaim = principal?.Claims.FirstOrDefault(c => c.Type == "token_id");
+                tokenId = tokenIdClaim?.Value;
+                if (tokenId == null) throw new ArgumentNullException($"tokenId empty ${tokenId}");
+            }
+            else
+            {
+                tokenId = requestModel.TokenId;
+                if (tokenId == null) return ResponseFormat.Unauthorized("token empty");
+            }
+            
+
+
             //find tokenData and update tokenUsed
             TokenData? tokenData = await tokenCheckRequest.GetTokenData(tokenId);
             if (tokenData == null) throw new ArgumentNullException($"TokenData null ${tokenId}");
@@ -157,8 +170,30 @@ namespace Token.API.Controllers
 
 
             await _context.SaveChangesAsync();
-            
-            return ResponseFormat.OK("token subscribe", "true");
+
+            using (HttpClient httpClient = new HttpClient())
+            {
+
+                var model = new { email = requestModel.Email, id_user = tokenData.UserID, id_token = tokenId };
+                var jsonContent = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
+
+                string? connection = _configuration.GetConnectionString("EmailServerConnection");
+                if (connection == null)
+                {
+                    _loggerManager.LogError(new ArgumentNullException("EmailServerConnection null", nameof(connection)));
+                    return ResponseFormat.InternalServerError("Server Error");
+                }
+                HttpResponseMessage response = await httpClient.PostAsync(connection, jsonContent);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return ResponseFormat.OK("token and email sub", "token and email sub");
+                }
+                else
+                {
+                    return ResponseFormat.OK("token sub", "token sub");
+                }
+            }
         }
 
         //[HttpDelete]

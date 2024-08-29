@@ -20,6 +20,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
+});
+
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -62,7 +74,11 @@ builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
 builder.Services.AddSingleton<IMessageSender, MessageSender>();
 
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(nameof(AppSettings)));
+builder.Services.AddDistributedMemoryCache(); // Додайте цей рядок
 
+
+// Додайте службу захисту даних
+builder.Services.AddDataProtection();
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();
@@ -73,11 +89,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
-
+app.UseRouting();
+app.UseCors("AllowAllOrigins");
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

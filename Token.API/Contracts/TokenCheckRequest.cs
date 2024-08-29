@@ -61,7 +61,7 @@ namespace Token.API.Contracts
                 ClaimsPrincipal principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
                 return principal;
             }
-            catch
+            catch (Exception e)
             {
                 return null;
             }

@@ -101,12 +101,16 @@ namespace Email.API.Controllers
         {
             TokenService tokenService = new TokenService(_configuration);
             string? token = tokenService.GetJWTTokenByRequest(Request);
-            if (token == null)
+            string? token_id = null;
+            if ( token != null )
             {
-                throw new ArgumentNullException(nameof(token), "Token null");
+                token_id = tokenService.GetTokenId(token);
+            } else 
+            {
+                token_id = model.TokenID;
             }
-            string? token_id = tokenService.GetTokenId(token);
-            if (String.IsNullOrEmpty(token_id)) throw new ArgumentNullException("Salt empty", nameof(token_id));
+
+            if (String.IsNullOrEmpty(token_id)) throw new Exception("TokenID empty");
 
             UserInfoData? userInfoData = await _context.UserInfoData.FindAsync(model.UserID);
             if(userInfoData == null) 

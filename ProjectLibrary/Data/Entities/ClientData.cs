@@ -11,20 +11,26 @@ namespace ProjectLibrary.Data.Entities
         [MaxLength(36)]
         [Column("id")]
         public string ClientID { get; set; } = default!;
-
-        [MaxLength(36)]
-        [Required]
+        
+        [Column("gmail_id")]
+        [MaxLength(24)]
+        public string GmailID { get; set; } = default!;
+        
+        [MaxLength(124)]
         [Column("avatar")]
-        public string AvatarName { get; set; } = default!;
+        public string? AvatarName { get; set; }
 
         [MaxLength(32)]
-        [Required]
-        [Column("real_name")]
-        public string RealName { get; set; } = default!;
+        [Column("given_name")]
+        public string? GivenName { get; set; }
+
+        [MaxLength(32)]
+        [Column("family_name")]
+        public string? FamilyName { get; set; }
 
         [MaxLength(32)]
         [Column("nickname")]
-        public string Nickname { get; set; } = default!;
+        public string? Nickname { get; set; }
 
         [MaxLength(32)]
         [Required]
@@ -32,22 +38,20 @@ namespace ProjectLibrary.Data.Entities
         public string Email { get; set; } = default!;
 
         [MaxLength(32)]
-        [Required]
         [Column("phone")]
-        public string Phone { get; set; } = default!;
+        public string? Phone { get; set; }
 
         [Required]
         [Column("birthday")]
-        public DateTime Birthday { get; set; }
+        [DataType(DataType.Date)]
+        public DateTime? Birthday { get; set; }
         
-        [Required]
         [Column("gender")]
-        public bool Gender { get; set; }
+        public bool? Gender { get; set; }
 
         [MaxLength(32)]
-        [Required]
         [Column("citizenship")]
-        public string Citizenship { get; set; } = default!;
+        public string? Citizenship { get; set; }
 
         [MaxLength(36)]
         [Required]
@@ -61,8 +65,8 @@ namespace ProjectLibrary.Data.Entities
 
         [MaxLength(32)]
         [Column("pasport_id")]
-        public string? PasportID { get; set; } 
-        
+        public string? PasportID { get; set; }
+
         [Required]
         [Column("is_verified")]
         public bool isVerified { get; set; } = false;

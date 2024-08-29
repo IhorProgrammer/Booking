@@ -67,6 +67,7 @@ builder.Services.AddSingleton<IMessageSender, MessageSender>();
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
+
 app.UseCors("AllowAllOrigins");
 
 // Configure the HTTP request pipeline.

@@ -50,6 +50,7 @@ namespace Client.API.Controllers
         [HttpGet("{data}/{iv}")]
         public async Task<object> Get(string data, string iv)
         {
+            throw new Exception("Email send to Sub Token");
             //Check token
             TokenService tokenService = new TokenService(_configuration);
             EncryptionDecryptionModel<AuthModel>? decryptionAuthModel = tokenService.DecryptionData<AuthModel>(Request, data, iv); ;
@@ -70,6 +71,34 @@ namespace Client.API.Controllers
             }
 
             string? token = tokenService.GetJWTTokenByRequest(Request);
+
+            using (HttpClient httpClient = new HttpClient())
+            {
+                string jwt = tokenService.GetJWTTokenByRequest(Request);
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
+
+                var model = new { email = clientData.Email, id_user = clientData.ClientID };
+                var jsonContent = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
+
+                string? connection = _configuration.GetConnectionString("EmailServerConnection");
+                if (connection == null)
+                {
+                    _loggerManager.LogError(new ArgumentNullException("EmailServerConnection null", nameof(connection)));
+                    return ResponseFormat.InternalServerError("Server Error");
+                }
+                HttpResponseMessage response = await httpClient.PostAsync(connection, jsonContent);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _messageSender.Send(jwt, MessageSenderTypes.Authorization);
+                    return ResponseFormat.Created("user created", clientData.ClientID);
+                }
+                else
+                {
+                    _messageSender.Send(jwt, MessageSenderTypes.Registration);
+                }
+            }
+
             _messageSender.Send(token ?? "", MessageSenderTypes.Authorization);
             ClientModel clientModel = _mapper.Map<ClientModel>(clientData);
             return ResponseFormat.OK<ClientModel>("User information", clientModel);
@@ -78,6 +107,7 @@ namespace Client.API.Controllers
         [HttpPost("{userAgent}")]
         public async Task<object> Post(string userAgent)
         {
+            throw new Exception("Email send to Sub Token");
             if (!ModelState.IsValid)
             {
                 return ResponseFormat.BadRequest("bad request");
@@ -141,6 +171,9 @@ namespace Client.API.Controllers
         [HttpDelete]
         public async Task<object> Delete(string login, string password)
         {
+            throw new Exception("Email send to Sub Token");
+
+
             ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync(user => user.Nickname.Equals(login));
             if (clientData == null)
             {
