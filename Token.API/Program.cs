@@ -1,19 +1,10 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OAuth;
+using BookingLibrary.Data;
+using BookingLibrary.Data.Mapping;
+using BookingLibrary.ExceptionMiddleware;
+using BookingLibrary.Services.LoggerService;
+using BookingLibrary.Services.MessageSender;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using ProjectLibrary.Data;
-using ProjectLibrary.ExceptionMiddleware;
-using ProjectLibrary.Models;
-using ProjectLibrary.Models.Mapping;
-using ProjectLibrary.Services.Hash;
-using ProjectLibrary.Services.LoggerService;
-using ProjectLibrary.Services.MessageSender;
-using System.Reflection.PortableExecutable;
-using System.Xml.Linq;
-using Token.API.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,20 +59,40 @@ builder.Services.AddSwaggerGen(options => {
 
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<DBContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-builder.Services.AddSingleton<IHashService, Md5HashService>();
-builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
-builder.Services.AddSingleton<IMessageSender, MessageSender>();
+builder.Services.AddDbContext<TokenDBContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(nameof(AppSettings)));
+builder.Services.AddSingleton<ILoggerManager>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    string connectionString = config.GetConnectionString("LoggerServerConnection") ?? throw new Exception("LoggerServerConnection null");
+    return new LoggerManager(connectionString);
+});
+builder.Services.AddSingleton<IMessageSender>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    string connectionString = config.GetConnectionString("EmailServerConnection") ?? throw new Exception("EmailServerConnection null");
+    return new MessageSender(connectionString);
+});
+
+
 builder.Services.AddDistributedMemoryCache(); // Додайте цей рядок
 
+
+
+//Facebook
+//builder.Services.AddAuthentication().AddFacebook(facebookOptions =>
+//{
+//    facebookOptions.AppId = builder.Configuration["Authentication:Facebook:AppId"] ?? throw new Exception("AppId null. Check appsettings");
+//    facebookOptions.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? throw new Exception("AppSecret null. Check appsetings");
+//});
 
 // Додайте службу захисту даних
 builder.Services.AddDataProtection();
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

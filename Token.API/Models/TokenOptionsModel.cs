@@ -1,11 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
-using ProjectLibrary.Models.TokenOptionsModel;
 using System.Text;
-
 namespace Token.API.Models
 {
-    public class TokenOptionsModel : ITokenOptionsModel
+    public class TokenOptionsModel
     {
         public string Salt { get; set; } = default!;
         public string SecretKey { get; set; } = default!;

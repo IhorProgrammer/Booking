@@ -1,65 +1,67 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using ProjectLibrary.Data;
-using ProjectLibrary.Data.Entities;
-using ProjectLibrary.Models;
+﻿using BookingLibrary.Data;
+using BookingLibrary.Data.DAO;
+using BookingLibrary.JsonResponce;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Token.API.Models;
+using Token.API.Services;
 
 namespace Token.API.Contracts
 {
     public class TokenGenerationRequest
     {
-        private readonly DBContext _context;
-        private readonly AppSettings _appSettings;
-        public TokenGenerationRequest(DBContext context, AppSettings appSettings)
-        {
-            _appSettings = appSettings;
-            _context = context;
+        public TokenDBContext Context { get; private set; }
 
-            if (String.IsNullOrEmpty(_appSettings.Issuer)) throw new ArgumentNullException("Issuer null", nameof(_appSettings.Issuer));
-            if (String.IsNullOrEmpty(_appSettings.Audience)) throw new ArgumentNullException("Audience null", nameof(_appSettings.Issuer));
-            if (_appSettings.Secret == null) throw new ArgumentNullException("Scret key null", nameof(_appSettings.Secret));
+        private TokenDAO? _tokenData;
+        public TokenDAO TokenData
+        {
+            get
+            {
+                if (_tokenData == null) throw ResponseFormat.TOKEN_DATA_NULL.Exception;
+                return _tokenData;
+            }
         }
 
-        public async Task<TokenData> AddTokenToDB()
+        private TokenGenerationResponse? _tokenGenerationResponse;
+        public TokenGenerationResponse TokenGenerationResponse
         {
-            TokenData tokenData = new TokenData();
-            tokenData.TokenID = Guid.NewGuid().ToString();
-            tokenData.Salt = Guid.NewGuid().ToString();
-            tokenData.TokenCreated = DateTime.UtcNow;
-            tokenData.TokenUsed = DateTime.UtcNow;
-            tokenData.UserID = null;
-            await _context.TokensData.AddAsync(tokenData);
-            await _context.SaveChangesAsync();
-            return tokenData;
+            get
+            {
+                if (_tokenGenerationResponse == null) throw ResponseFormat.TOKEN_GENERATION_RESPOSE_ERROR.Exception;
+                return _tokenGenerationResponse;
+            }
         }
 
-        public async Task<TokenGenerationResponce> GetToken(string userAgent)
+        public TokenGenerationRequest(TokenDBContext dBContext)
         {
+            Context = dBContext;
+        }
 
 
-            TokenData tokenData = await AddTokenToDB();
+        public async Task<TokenGenerationRequest> GetToken(string userAgent, string secret, string issuer, string audience)
+        {
+            TokenDAO tokenData = await TokenDBContext.GenerateTokenAsync(Context);
             TokenOptionsModel options = new();
             options.UserAgent = userAgent;
             options.TokenID = tokenData.TokenID;
-            if (_appSettings.Secret == null) throw new ArgumentNullException("Scret key null");
-            options.SecretKey = _appSettings.Secret;
+            options.SecretKey = secret;
             options.Salt = tokenData.Salt;
             options.Created = tokenData.TokenCreated;
 
-            return new TokenGenerationResponce()
+            _tokenGenerationResponse = new TokenGenerationResponse()
             {
-                token = GenerateToken(GenerateIdentity(options.TokenID), options),
+                token = GenerateToken(GenerateIdentity(options.TokenID), options, issuer, audience),
                 salt = options.Salt,
             };
-            }
+            return this;
+        }
 
-        private string GenerateToken(ClaimsIdentity identity, TokenOptionsModel optionsModel)
+        private string GenerateToken(ClaimsIdentity identity, TokenOptionsModel optionsModel, string issuer, string audience)
         {
             var jwt = new JwtSecurityToken(
-                  issuer: _appSettings.Issuer,
-                  audience: _appSettings.Audience,
+                  issuer: issuer,
+                  audience: audience,
                   notBefore: optionsModel.Created,
                   claims: identity.Claims,
                   signingCredentials: new SigningCredentials(optionsModel.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));

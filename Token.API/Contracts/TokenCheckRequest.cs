@@ -1,11 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BookingLibrary.Data;
+using BookingLibrary.Data.DAO;
+using BookingLibrary.JsonResponce;
 using Microsoft.IdentityModel.Tokens;
-using ProjectLibrary.Data;
-using ProjectLibrary.Data.Entities;
-using ProjectLibrary.Models;
-using ProjectLibrary.Services;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Security.Claims;
 using Token.API.Models;
 
@@ -13,42 +10,83 @@ namespace Token.API.Contracts
 {
     public class TokenCheckRequest
     {
-        private readonly DBContext _context;
-        private readonly AppSettings _appSettings;
+        private readonly TokenDBContext _context;
 
-        public TokenCheckRequest(DBContext context, AppSettings appSettings)
+        private string token = "";
+
+        public string Token
         {
-            _context = context;
-            _appSettings = appSettings;
+            get { return token; }
+
+            set 
+            {
+                token = value; 
+            }
         }
 
-        
+        private TokenDAO? _tokenData;
+        public TokenDAO TokenData { 
+            get 
+            {
+                if (_tokenData != null) return _tokenData;
+                _tokenData = TokenDBContext.GetTokenDataAsync(_context, TokenId).Result;
+                if (_tokenData != null) return _tokenData;
+                throw ResponseFormat.TOKEN_DATA_NULL.Exception;
+            }
+        }
 
-        public async Task<ClaimsPrincipal?> Check(string token, string userAgent) 
+        private ClaimsPrincipal? _principal;
+        public ClaimsPrincipal Principal
         {
-            JwtSecurityToken? jwtSecurityToken = GetJwtSecurityToken(token);
-            if( jwtSecurityToken == null) return null;
-            string? tokenId = GetTokenIdFromToken(jwtSecurityToken);
-            if( tokenId == null ) return null;
-            TokenData? tokenData = await GetTokenData(tokenId);
-            if( tokenData == null ) return null;
+            get
+            {
+                if (_principal == null) throw ResponseFormat.TOKEN_DATA_NULL.Exception;
+                return _principal;
+            }
+        }
+
+        private string tokenId = ""; 
+        public string TokenId
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(tokenId)) return tokenId;
+
+                JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+                JwtSecurityToken jwtToken = handler.ReadJwtToken(Token);
+                string? tokenIdTemp = jwtToken.Claims.FirstOrDefault(c => c.Type == "token_id")?.Value;
+                if( tokenIdTemp == null ) throw ResponseFormat.TOKEN_ID_INVALID.Exception;
+                tokenId = tokenIdTemp;
+                return tokenId;
+            }
+        }
+
+
+
+        public TokenCheckRequest(TokenDBContext context)
+        {
+            _context = context;
+        }
+
+        public TokenCheckRequest Check(string token, string userAgent, string secret, string issuer, string audience) 
+        {
+            Token = token;
             
-            if (_appSettings.Secret == null) throw new ArgumentNullException("Secret key null");
             TokenOptionsModel options = new TokenOptionsModel();
-            options.SecretKey = _appSettings.Secret;
-            options.TokenID = tokenId;
-            options.Salt = tokenData.Salt;
-            options.Created = tokenData.TokenCreated;
+            options.SecretKey = secret;
+            options.TokenID = TokenId;
+            options.Salt = TokenData.Salt;
+            options.Created = TokenData.TokenCreated;
             options.UserAgent = userAgent;
             SymmetricSecurityKey key = options.GetSymmetricSecurityKey();
 
             TokenValidationParameters validationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidIssuer = _appSettings.Issuer,
+                ValidIssuer = issuer,
 
                 ValidateAudience = true,
-                ValidAudience = _appSettings.Audience,
+                ValidAudience = audience,
 
                 ValidateLifetime = false,
 
@@ -59,43 +97,13 @@ namespace Token.API.Contracts
             try
             {
                 ClaimsPrincipal principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
-                return principal;
+                _principal = principal;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                return null;
+                throw ResponseFormat.TOKEN_INVALID.Exception;
             }
-        }
-
-        public string? GetSalt(string token)
-        {
-            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtToken = handler.ReadJwtToken(token);
-            string? salt = jwtToken.Claims.FirstOrDefault(c => c.Type == "token_id")?.Value;
-            return salt;
-        }
-
-        public JwtSecurityToken? GetJwtSecurityToken(string token)
-        {
-            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken? jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-            return jsonToken;
-        }
-
-        public async Task<TokenData?> GetTokenData (string tokenId)
-        {
-            TokenData? tokenData = await _context.TokensData.FindAsync(tokenId);
-            if(tokenData == null) return null;
-            tokenData.TokenUsed = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            return tokenData;
-        }
-
-        public string? GetTokenIdFromToken(JwtSecurityToken token)
-        {
-            Claim? saltClaim = token.Claims.FirstOrDefault(c => c.Type == "token_id");
-            string? salt = saltClaim?.Value;
-            return salt;
+            return this;
         }
     }
 }

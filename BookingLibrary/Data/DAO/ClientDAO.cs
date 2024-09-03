@@ -1,11 +1,11 @@
-﻿using ProjectLibrary.Services.Hash;
+﻿using BookingLibrary.Helpers.Hash.HashTypes;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ProjectLibrary.Data.Entities
+namespace BookingLibrary.Data.DAO
 {
     [Table("client_data")]
-    public class ClientData
+    public class ClientDAO
     {
         [Key]
         [MaxLength(36)]
@@ -75,12 +75,12 @@ namespace ProjectLibrary.Data.Entities
         public double Balance { get; set; } = 0.0;
 
         [ForeignKey("PasportID")]
-        public ClientPasportData? ClientPasportData { get; set; }
+        public ClientPasportDAO? ClientPasportData { get; set; }
 
 
-        public bool ValidatePassword(string enteredPassword, IHashService hashService)
+        public bool ValidatePassword(string enteredPassword, IHash hashService)
         {
-            string enteredDerivedKey = hashService.HexString(Salt + enteredPassword);
+            string enteredDerivedKey = hashService.HashString(Salt + enteredPassword);
             return enteredDerivedKey.Equals(DerivedKey);
         }
 

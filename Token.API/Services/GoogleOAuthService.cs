@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
-using ProjectLibrary.Helpers;
+﻿using BookingLibrary.Helpers.HttpClientHelperNamespace;
+using Microsoft.AspNetCore.WebUtilities;
 using Token.API.Models;
 
 namespace Token.API.Services
@@ -8,14 +8,12 @@ namespace Token.API.Services
     {
         private const string ClientId = "711827789320-nb53rqb07tpb7g8teohd7a3hjmvro5iv.apps.googleusercontent.com";
         private const string ClientSecret = "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";
-
-
         private const string OAuthServerEndpoint = "https://accounts.google.com/o/oauth2/v2/auth";
         private const string TokenServerEndpoint = "https://oauth2.googleapis.com/token";
 
         public static string GenerateOAuthRequestUrl(string scope, string redirectUrl, string codeChellange, string state)
         {
-            var queryParams = new Dictionary<string, string>
+            Dictionary<string, string?> queryParams = new Dictionary<string, string?>
             {
                 { "client_id", ClientId },
                 { "redirect_uri", redirectUrl },

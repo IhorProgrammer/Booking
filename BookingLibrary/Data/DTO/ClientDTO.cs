@@ -1,19 +1,23 @@
-﻿using Microsoft.AspNetCore.Http;
-using ProjectLibrary.Services.FileManager;
+﻿using BookingLibrary.Helpers.FileManager;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Net.Mail;
 using System.Numerics;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace ProjectLibrary.Models.DTO
+namespace BookingLibrary.Data.DTO
 {
-    public class ClientModel
+    public class ClientDTO
     {
-        //[Url(ErrorMessage = "Avatar must be a valid URL.")]
+        [JsonPropertyName("id")]
+        public string ClientID { get; set; } = default!;
         [JsonPropertyName("avatar")]
         public string? Avatar { get; set; } = default!;
+        [JsonPropertyName("gmail_id")]
+        public string? GmailID { get; set; }
         [JsonPropertyName("given_name")]
         public string? GivenName { get; set; } = default!;
         [JsonPropertyName("family_name")]
@@ -35,9 +39,9 @@ namespace ProjectLibrary.Models.DTO
         public string Password { get; set; } = default!;
 
 
-        public static async Task<ClientModel> ToClientModel(IFormCollection form, IFormFileCollection formFiles)
+        public static async Task<ClientDTO> ToClientModel(IFormCollection form, IFormFileCollection formFiles)
         {
-            ClientModel clientModel = new ClientModel();
+            ClientDTO clientModel = new ClientDTO();
             
             
             string? realName = form["given_name"];

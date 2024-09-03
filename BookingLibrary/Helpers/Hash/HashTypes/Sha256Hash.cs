@@ -2,15 +2,15 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Token.API.Helpers
+namespace BookingLibrary.Helpers.Hash.HashTypes
 {
-    public static class Sha256Helper
+    public class Sha256Hash : IHash
     {
-        public static string ComputeHash(string codeVerifier)
+        public string HashString(string text)
         {
             using (var sha256 = SHA256.Create())
             {
-                var codeVerifierBytes = Encoding.ASCII.GetBytes(codeVerifier);
+                var codeVerifierBytes = Encoding.ASCII.GetBytes(text);
                 var hashBytes = sha256.ComputeHash(codeVerifierBytes);
 
                 // Кодування хешу в Base64Url

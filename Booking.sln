@@ -12,6 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Logger.API", "Logger.API\Lo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Token.API", "Token.API\Token.API.csproj", "{37B30383-B836-406E-99DF-506415033C65}"
 	ProjectSection(ProjectDependencies) = postProject
+		{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5} = {9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}
 		{D0C9B359-1FB7-45C2-885D-4D214A67AB9F} = {D0C9B359-1FB7-45C2-885D-4D214A67AB9F}
 	EndProjectSection
 EndProject
@@ -26,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Email.API", "Email.API\Emai
 	ProjectSection(ProjectDependencies) = postProject
 		{D0C9B359-1FB7-45C2-885D-4D214A67AB9F} = {D0C9B359-1FB7-45C2-885D-4D214A67AB9F}
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingLibrary", "BookingLibrary\BookingLibrary.csproj", "{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +56,10 @@ Global
 		{BA8268DE-0759-47B0-9A13-CC2CD7D0C7E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA8268DE-0759-47B0-9A13-CC2CD7D0C7E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA8268DE-0759-47B0-9A13-CC2CD7D0C7E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
