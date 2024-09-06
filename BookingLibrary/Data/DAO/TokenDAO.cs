@@ -28,5 +28,10 @@ namespace BookingLibrary.Data.DAO
         [Column("salt")]
         [MaxLength(36)]
         public String Salt { get; set; } = default!;
+
+        public TokenDAO Clone()
+        {
+            return (TokenDAO)this.MemberwiseClone();
+        }
     }
 }

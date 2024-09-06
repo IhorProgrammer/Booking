@@ -43,5 +43,10 @@ namespace BookingLibrary.Data.DAO
         public string Salt { get; set; } = default!;
 
         public ClientDAO? ClientData { get; set; }
+
+        public ClientPasportDAO Clone()
+        {
+            return (ClientPasportDAO)this.MemberwiseClone();
+        }
     }
 }

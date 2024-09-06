@@ -1,11 +1,12 @@
+using BookingLibrary.Data.Mapping;
+using BookingLibrary.ExceptionMiddleware;
+using BookingLibrary.Services.LoggerService;
+using BookingLibrary.Services.MessageSender;
+using BookingLibrary.Services.TokenService;
+using Client.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using ProjectLibrary.Data;
-using ProjectLibrary.ExceptionMiddleware;
-using ProjectLibrary.Models.Mapping;
-using ProjectLibrary.Services.Hash;
-using ProjectLibrary.Services.LoggerService;
-using ProjectLibrary.Services.MessageSender;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,10 +59,20 @@ builder.Services.AddSwaggerGen(options => {
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<DBContext>( options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-builder.Services.AddSingleton<IHashService, Md5HashService>();
-builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
-builder.Services.AddSingleton<IMessageSender, MessageSender>();
+builder.Services.AddDbContext<ClientDBContext>( options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+builder.Services.AddSingleton<ILoggerManager>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    string connectionString = config.GetConnectionString("LoggerServerConnection") ?? throw new Exception("LoggerServerConnection null");
+    return new LoggerManager(connectionString);
+});
+builder.Services.AddSingleton<IMessageSender>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    string connectionString = config.GetConnectionString("EmailServerConnection") ?? throw new Exception("EmailServerConnection null");
+    return new MessageSender(connectionString);
+});
+builder.Services.AddSingleton<TokenServer>();
 
 
 var app = builder.Build();

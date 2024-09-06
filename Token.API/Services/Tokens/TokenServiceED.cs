@@ -10,7 +10,7 @@ namespace Token.API.Services.Tokens
 {
     public class TokenServiceED : TokenService
     {
-        public TokenDAO TokenData { get; set; } = default!;
+        public TokenDAO TokenData { get; private set; } = default!;
 
         private TokenServiceED(TokenDBContext context, HttpRequest request) : base(context, request){}
 
@@ -26,17 +26,22 @@ namespace Token.API.Services.Tokens
             TokenCheckRequest tokenCheckRequest = new TokenCheckRequest(Context);
             tokenCheckRequest.Token = Token;
             string tokenID = tokenCheckRequest.TokenId;
-            TokenDAO? tokenData = tokenCheckRequest.TokenData;
+            TokenDAO? tokenData = tokenCheckRequest.TokenData.Clone();
             if (tokenData == null) throw ResponseFormat.TOKEN_DATA_NULL.Exception;
+            TokenData = tokenData;
         }
 
-        public DecryptionUserAgentModel JsonDecrypt(string data, string iv)
+        public string JsonDecrypt(string data, string iv)
         {
-            string textJson = AES.Decrypt(Convert.FromBase64String(Uri.UnescapeDataString(data)), Convert.FromBase64String(Uri.UnescapeDataString(iv)), TokenData.TokenID);
+            string textJson = AES.Decrypt(Convert.FromBase64String(Uri.UnescapeDataString(data)), Convert.FromBase64String(Uri.UnescapeDataString(iv)), TokenData.Salt);
+            return textJson;
+        }
+
+        public string UserAgentByJsonDecrypt( string textJson )
+        {
             DecryptionUserAgentModel? decryptionModel = JsonSerializer.Deserialize<DecryptionUserAgentModel>(textJson);
             if (decryptionModel == null) throw ResponseFormat.DECRYPTION_NULL.Exception;
-            return decryptionModel;
-
+            return decryptionModel.UserAgent;
         }
 
     }

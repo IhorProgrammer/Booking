@@ -35,11 +35,22 @@ namespace BookingLibrary.JsonResponce
         public static readonly ResponseFormatData APP_SETTINGS_SECRET_NULL = new() { Message = "Server error", Code = HttpStatusCode.InternalServerError, };
         public static readonly ResponseFormatData APP_SETTINGS_ISSUER_NULL = new() { Message = "Server error", Code = HttpStatusCode.InternalServerError, };
         public static readonly ResponseFormatData APP_SETTINGS_AUDIENCE_NULL = new() { Message = "Server error", Code = HttpStatusCode.InternalServerError, };
-
+        //Google Session
         public static readonly ResponseFormatData GET_SESSION_OK = new() { Message = "sessions", Code = HttpStatusCode.OK, };
         public static readonly ResponseFormatData REMOVE_SESSION_OK = new() { Message = "session removed", Code = HttpStatusCode.OK, };
         public static readonly ResponseFormatData REMOVE_SESSION_FAIL = new() { Message = "server error", Code = HttpStatusCode.InternalServerError, };
+        
+        //Auth
+        public static readonly ResponseFormatData AUTH_INVALID = new() { Message = "login or password invalid", Code = HttpStatusCode.BadRequest, };
+        public static readonly ResponseFormatData AUTHORIZATION_VALID = new() { Message = "authorization ok", Code = HttpStatusCode.OK, };
+        //Reg
+        public static readonly ResponseFormatData REGISTRATION_VALID = new() { Message = "registration ok", Code = HttpStatusCode.OK, };
+        public static readonly ResponseFormatData REGISTRATION_INVALID = new() { Message = "registration invalid", Code = HttpStatusCode.BadRequest, };
 
+        //TokenServer
+        public static readonly ResponseFormatData TOKEN_SERVER_CONNECTION_NULL = new() { Message = "server error", Code = HttpStatusCode.InternalServerError, };
+        
+        public static readonly ResponseFormatData DECRYPTION_SERVER_EMPTY_STRING = new () { Message = "decryption error", Code = HttpStatusCode.BadRequest, };
 
 
         public static JsonResponseFormat<T?> GetResponceJson<T>(ResponseFormatData responseFormatData, T? data)

@@ -1,19 +1,20 @@
 ﻿using AutoMapper;
+using BookingLibrary.Data.DAO;
+using BookingLibrary.Data.DTO;
+using BookingLibrary.Helpers.Hash;
+using BookingLibrary.Helpers.Hash.HashTypes;
+using BookingLibrary.JsonResponce;
+using BookingLibrary.Services.LoggerService;
+using BookingLibrary.Services.MessageSender;
+using BookingLibrary.Services.TokenService;
+using BookingLibrary.Services.TokenService.Model;
+using BookingLibrary.Token;
+using Client.API.Data;
 using Client.API.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
-using ProjectLibrary.Data;
-using ProjectLibrary.Data.Entities;
-using ProjectLibrary.Models.DTO;
-using ProjectLibrary.Models.EncryptionDecryptionModel;
-using ProjectLibrary.Services.AES;
-using ProjectLibrary.Services.Hash;
-using ProjectLibrary.Services.JsonResponce;
-using ProjectLibrary.Services.LoggerService;
-using ProjectLibrary.Services.MessageSender;
-using ProjectLibrary.Services.TokenService;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -27,22 +28,26 @@ namespace Client.API.Controllers
     [ApiController]
     public class ClientController : ControllerBase
     {
-        private readonly DBContext _context;
-        private readonly IHashService _hashService;
-        private readonly ILoggerManager _loggerManager;
+        private readonly ClientDBContext _context;
+        private readonly TokenServer _tokenService;
+        private readonly IHash _hashService;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
+        private readonly ILoggerManager _loggerManager;
         private readonly IMessageSender _messageSender;
         private static readonly HttpClient client = new HttpClient();
 
-        public ClientController(DBContext context, IHashService hashService, ILoggerManager loggerManager, IMapper mapper, IConfiguration configuration, IMessageSender messageSender)
+
+
+        public ClientController(ClientDBContext context, ILoggerManager loggerManager, IMapper mapper, IConfiguration configuration, IMessageSender messageSender, TokenServer tokenService)
         {
             _context = context;
-            _hashService = hashService;
+            _hashService = HashHelper.Type(HashType.MD5);
             _loggerManager = loggerManager;
             _mapper = mapper;
             _configuration = configuration;
             _messageSender = messageSender;
+            _tokenService = tokenService;
         }
 
 
@@ -50,151 +55,71 @@ namespace Client.API.Controllers
         [HttpGet("{data}/{iv}")]
         public async Task<object> Get(string data, string iv)
         {
-            throw new Exception("Email send to Sub Token");
-            //Check token
-            TokenService tokenService = new TokenService(_configuration);
-            EncryptionDecryptionModel<AuthModel>? decryptionAuthModel = tokenService.DecryptionData<AuthModel>(Request, data, iv); ;
-            if (decryptionAuthModel == null) return ResponseFormat.BadRequest("token invalid");
+            string jwt = TokenJWT.GetTokenJWT(Request).Token;
+            EncryptionDecryptionModel<AuthModel> decryptionAuthModel = _tokenService.Decryption<AuthModel>(data, iv, jwt);
 
-            //Get clientData
-            ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync(user => user.Nickname.Equals(decryptionAuthModel.Data.Login));
-            if (clientData == null) return ResponseFormat.BadRequest("Login or password invalid");
-            bool isValidate = clientData.ValidatePassword(decryptionAuthModel.Data.Password, _hashService);
-            if (!isValidate) return ResponseFormat.BadRequest("Login or password invalid");
-
-
-
-            //Token Subscription
-            if (!tokenService.TokenSubscription(Request, decryptionAuthModel.UserAgent, clientData.ClientID))
+            ClientDAO clientDAO = await ClientDBContext.AuthAsync(decryptionAuthModel.Data.Login, decryptionAuthModel.Data.Password, _context);
+            if(!_tokenService.Subscription(decryptionAuthModel.UserAgent, clientDAO.ClientID, clientDAO.Email, jwt))
             {
-                return ResponseFormat.BadRequest("Login or password invalid");
-            }
+                return ResponseFormat.TOKEN_SERVER_CONNECTION_NULL.Responce;
+            };
+            ClientDTO clientDTO = _mapper.Map<ClientDTO>(clientDAO);
+            return ResponseFormat.GetResponceJson( ResponseFormat.AUTHORIZATION_VALID, clientDTO);
 
-            string? token = tokenService.GetJWTTokenByRequest(Request);
-
-            using (HttpClient httpClient = new HttpClient())
-            {
-                string jwt = tokenService.GetJWTTokenByRequest(Request);
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
-
-                var model = new { email = clientData.Email, id_user = clientData.ClientID };
-                var jsonContent = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
-
-                string? connection = _configuration.GetConnectionString("EmailServerConnection");
-                if (connection == null)
-                {
-                    _loggerManager.LogError(new ArgumentNullException("EmailServerConnection null", nameof(connection)));
-                    return ResponseFormat.InternalServerError("Server Error");
-                }
-                HttpResponseMessage response = await httpClient.PostAsync(connection, jsonContent);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _messageSender.Send(jwt, MessageSenderTypes.Authorization);
-                    return ResponseFormat.Created("user created", clientData.ClientID);
-                }
-                else
-                {
-                    _messageSender.Send(jwt, MessageSenderTypes.Registration);
-                }
-            }
-
-            _messageSender.Send(token ?? "", MessageSenderTypes.Authorization);
-            ClientModel clientModel = _mapper.Map<ClientModel>(clientData);
-            return ResponseFormat.OK<ClientModel>("User information", clientModel);
         }
 
-        [HttpPost("{userAgent}")]
-        public async Task<object> Post(string userAgent)
+        [HttpPost]
+        public async Task<object> Post()
         {
-            throw new Exception("Email send to Sub Token");
-            if (!ModelState.IsValid)
-            {
-                return ResponseFormat.BadRequest("bad request");
-            }
-            ClientModel client = await ClientModel.ToClientModel(Request.Form, Request.Form.Files);
+            string? userAgent = Request.Form["user_agent"];
+            if (userAgent == null) return ResponseFormat.USER_AGENT_EMPTY.Responce;
+            //получение DTO 
+            string jwt = TokenJWT.GetTokenJWT(Request).Token;
+            ClientDTO client = await ClientDTO.ToClientModel(Request.Form, Request.Form.Files);
 
-            if (!client.isValid())
-            {
-                //Delete File
-                return ResponseFormat.BadRequest("validate error");
-            }
-
-            TokenService tokenService = new TokenService(_configuration);
-            string? jwt = tokenService.GetJWTTokenByRequest(Request);
-            if (jwt == null)
-            {
-                //Delete File
-                return ResponseFormat.BadRequest("token invalid");
-            }
-
-
-            var clientData = _mapper.Map<ClientData>(client);
-            clientData.ClientID = Guid.NewGuid().ToString();
-            clientData.Salt = _hashService.HexString(Guid.NewGuid().ToString());
-            clientData.DerivedKey = _hashService.HexString(clientData.Salt + client.Password);
-
-            // Додавання нового клієнта
-            _context.ClientData.Add(clientData);
-
+            ClientDAO clientDAO = _mapper.Map<ClientDAO>(client);
+            clientDAO.ClientID = Guid.NewGuid().ToString();
+            clientDAO.Salt = _hashService.HashString(Guid.NewGuid().ToString());
+            clientDAO.DerivedKey = _hashService.HashString(clientDAO.Salt + client.Password);
+            _context.ClientData.Add(clientDAO);
             await _context.SaveChangesAsync();
 
-            using (HttpClient httpClient = new HttpClient())
+            //подписка на токен
+            if (!_tokenService.Subscription(userAgent, clientDAO.ClientID, clientDAO.Email, jwt))
             {
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
-
-                var model = new { email = clientData.Email, id_user = clientData.ClientID };
-                var jsonContent = new StringContent(JsonSerializer.Serialize(model), Encoding.UTF8, "application/json");
-
-                string? connection = _configuration.GetConnectionString("EmailServerConnection");
-                if (connection == null)
-                {
-                    _loggerManager.LogError(new ArgumentNullException("EmailServerConnection null", nameof(connection)));
-                    return ResponseFormat.InternalServerError("Server Error");
-                }
-                HttpResponseMessage response = await httpClient.PostAsync(connection, jsonContent);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _messageSender.Send(jwt, MessageSenderTypes.Authorization);
-                    return ResponseFormat.Created("user created", clientData.ClientID);
-                }
-                else
-                {
-                    _messageSender.Send(jwt, MessageSenderTypes.Registration);
-                }
-            }
-
-            return ResponseFormat.Created("user and email created", clientData.ClientID);
+                return ResponseFormat.TOKEN_SERVER_CONNECTION_NULL.Responce;
+            };
+            ClientDTO clientDTO = _mapper.Map<ClientDTO>(clientDAO);
+            return ResponseFormat.GetResponceJson(ResponseFormat.REGISTRATION_VALID, clientDTO);
         }
 
-        [HttpDelete]
-        public async Task<object> Delete(string login, string password)
-        {
-            throw new Exception("Email send to Sub Token");
+        //[HttpDelete]
+        //public async Task<object> Delete(string login, string password)
+        //{
+        //    throw new Exception("Email send to Sub Token");
 
 
-            ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync(user => user.Nickname.Equals(login));
-            if (clientData == null)
-            {
-                return ResponseFormat.BadRequest("Login or password invalid");
-            }
-            string dk = _hashService.HexString(clientData.Salt + password);
-            if (!dk.Equals(clientData.DerivedKey))
-            {
-                return ResponseFormat.BadRequest("Login or password invalid");
-            }
+        //    ClientData? clientData = await _context.ClientData.FirstOrDefaultAsync(user => user.Nickname.Equals(login));
+        //    if (clientData == null)
+        //    {
+        //        return ResponseFormat.BadRequest("Login or password invalid");
+        //    }
+        //    string dk = _hashService.HexString(clientData.Salt + password);
+        //    if (!dk.Equals(clientData.DerivedKey))
+        //    {
+        //        return ResponseFormat.BadRequest("Login or password invalid");
+        //    }
 
-            if (clientData.ClientPasportData != null)
-            {
-                _context.ClientPasportData.Remove(clientData.ClientPasportData);
-                clientData.PasportID = null;
-            }
+        //    if (clientData.ClientPasportData != null)
+        //    {
+        //        _context.ClientPasportData.Remove(clientData.ClientPasportData);
+        //        clientData.PasportID = null;
+        //    }
 
-            //Зделать неактивным все даные (недвижимость, компании)
+        //    //Зделать неактивным все даные (недвижимость, компании)
 
 
-            throw new Exception("Error");
-        }
+        //    throw new Exception("Error");
+        //}
     }
 }

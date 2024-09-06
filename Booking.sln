@@ -5,6 +5,7 @@ VisualStudioVersion = 17.10.35027.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client.API", "Client.API\Client.API.csproj", "{FFB5A18C-BAE0-45A2-8CFC-8C724F77585B}"
 	ProjectSection(ProjectDependencies) = postProject
+		{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5} = {9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}
 		{D0C9B359-1FB7-45C2-885D-4D214A67AB9F} = {D0C9B359-1FB7-45C2-885D-4D214A67AB9F}
 	EndProjectSection
 EndProject
@@ -28,7 +29,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Email.API", "Email.API\Emai
 		{D0C9B359-1FB7-45C2-885D-4D214A67AB9F} = {D0C9B359-1FB7-45C2-885D-4D214A67AB9F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingLibrary", "BookingLibrary\BookingLibrary.csproj", "{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BookingLibrary", "BookingLibrary\BookingLibrary.csproj", "{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

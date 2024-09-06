@@ -78,11 +78,10 @@ namespace BookingLibrary.Data.DAO
         public ClientPasportDAO? ClientPasportData { get; set; }
 
 
-        public bool ValidatePassword(string enteredPassword, IHash hashService)
-        {
-            string enteredDerivedKey = hashService.HashString(Salt + enteredPassword);
-            return enteredDerivedKey.Equals(DerivedKey);
-        }
 
+        public ClientDAO Clone()
+        {
+            return (ClientDAO)this.MemberwiseClone();
+        }
     }
 }

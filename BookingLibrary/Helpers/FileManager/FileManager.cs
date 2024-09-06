@@ -11,7 +11,7 @@ namespace BookingLibrary.Helpers.FileManager
             string uploadPath = Path.Combine(Directory.GetCurrentDirectory(), FileSavePath);
             string fullPath = "";
             string fileName = "";
-            string extension = Path.GetExtension(file.FileName);
+            string extension = Path.GetExtension(file.FileName).ToLower();
             do
             {
                 fileName = Guid.NewGuid().ToString() + extension;
@@ -24,6 +24,13 @@ namespace BookingLibrary.Helpers.FileManager
             }
 
             return fileName; 
+        }
+
+        public static bool DeleteFile(string fileName, string FilePath)
+        {
+            string uploadPath = Path.Combine(Directory.GetCurrentDirectory(), FilePath);
+            File.Delete(Path.Combine(uploadPath, fileName));
+            return true;
         }
 
 

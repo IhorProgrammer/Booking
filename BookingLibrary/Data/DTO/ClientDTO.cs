@@ -15,60 +15,75 @@ namespace BookingLibrary.Data.DTO
         [JsonPropertyName("id")]
         public string ClientID { get; set; } = default!;
         [JsonPropertyName("avatar")]
-        public string? Avatar { get; set; } = default!;
+        public string? Avatar { get; set; } = null;
         [JsonPropertyName("gmail_id")]
-        public string? GmailID { get; set; }
+        public string? GmailID { get; set; } = null;
         [JsonPropertyName("given_name")]
-        public string? GivenName { get; set; } = default!;
+        public string? GivenName { get; set; } = null;
         [JsonPropertyName("family_name")]
-        public string? FamilyName { get; set; } = default!;
+        public string? FamilyName { get; set; } = null;
 
         [JsonPropertyName("nickname")]
-        public string? Nickname { get; set; } = default!;
+        public string? Nickname { get; set; } = null;
         [JsonPropertyName("email")]
         public string Email { get; set; } = default!;
         [JsonPropertyName("phone")]
-        public string Phone { get; set; } = default!;
+        public string? Phone { get; set; } = null;
         [JsonPropertyName("birthday")]
-        public DateTime Birthday { get; set; }
+        public DateTime? Birthday { get; set; } = null;
         [JsonPropertyName("gender")]
         public bool? Gender { get; set; }
         [JsonPropertyName("citizenship")]
-        public string? Citizenship { get; set; } = default!;
+        public string? Citizenship { get; set; } = null;
         [JsonPropertyName("password")]
-        public string Password { get; set; } = default!;
+        public string? Password { get; set; } = null;
 
 
         public static async Task<ClientDTO> ToClientModel(IFormCollection form, IFormFileCollection formFiles)
         {
             ClientDTO clientModel = new ClientDTO();
+            try
+            {
+                clientModel.GivenName = form["given_name"];
+                clientModel.FamilyName = form["family_name"];
+                string? nickname = form["nickname"];
+                clientModel.Nickname = nickname ?? throw new ArgumentNullException(nameof(nickname), "ToClientModel Error");
+                string? email = form["email"];
+                clientModel.Email = email ?? throw new ArgumentNullException(nameof(email), "ToClientModel Error");
+                clientModel.Phone = form["phone"];
+                string? birthday = form["birthday"];
+                clientModel.Birthday = birthday != null ? DateTime.Parse(birthday) : null;
+                string? gender = form["gender"];
+                clientModel.Gender = gender != null ? Boolean.Parse(gender) : null;
+
+                clientModel.Citizenship = form["citizenship"];
+                string? password = form["password"];
+                clientModel.Password = password ?? throw new ArgumentNullException(nameof(password), "ToClientModel Error"); ;
+
+                if (formFiles[0] != null)
+                {
+                    string ext = Path.GetExtension(formFiles[0].FileName).ToLower();
+                    string[] allowedExtensions = { ".png", ".jpg", ".jpeg", ".gif" };
+                    if (allowedExtensions.Contains(ext))
+                    {
+                        clientModel.Avatar = await FileManager.SaveFile(formFiles[0], "image");
+                    }
+                    else
+                    {
+                        throw new ArgumentNullException(nameof(ext), "Extension image error");
+                    }
+                }
+                return clientModel;
+            }
+            catch (Exception ex) 
+            {
+                if( !String.IsNullOrEmpty(clientModel.Avatar) )
+                {
+                    FileManager.DeleteFile(clientModel.Avatar, "image");
+                }
+                throw ex;
+            }
             
-            
-            string? realName = form["given_name"];
-            clientModel.GivenName = realName ?? throw new ArgumentNullException(nameof(realName ), "ToClientModel Error");
-            string? familyName = form["family_name"];
-            clientModel.FamilyName = realName ?? throw new ArgumentNullException(nameof(familyName), "ToClientModel Error");
-            string? nickname = form["nickname"];
-            clientModel.Nickname = nickname ?? throw new ArgumentNullException(nameof(nickname), "ToClientModel Error");
-            string? email = form["email"];
-            clientModel.Email = email ?? throw new ArgumentNullException(nameof(email), "ToClientModel Error"); 
-            string? phone = form["phone"];
-            clientModel.Phone = phone ?? throw new ArgumentNullException(nameof(phone), "ToClientModel Error"); 
-            string? birthday = form["birthday"];
-            clientModel.Birthday = DateTime.Parse(birthday ?? throw new ArgumentNullException(nameof(birthday), "ToClientModel Error")); 
-            string? gender = form["gender"];
-            clientModel.Gender = Boolean.Parse(gender ?? throw new ArgumentNullException(nameof(gender), "ToClientModel Error"));
-            string? citizenship = form["citizenship"];
-            clientModel.Citizenship = citizenship ?? throw new ArgumentNullException(nameof(citizenship), "ToClientModel Error"); 
-            string? password = form["password"];
-            clientModel.Password = password ?? throw new ArgumentNullException(nameof(password), "ToClientModel Error"); ;
-
-
-
-            clientModel.Avatar = await FileManager.SaveFile(formFiles[0], "image");
-             
-             
-            return clientModel;
         }
 
         public bool isValid()
@@ -83,8 +98,7 @@ namespace BookingLibrary.Data.DTO
             }
             else
             {
-                return AvatarValidation()
-                && GivenNameValidation()
+                return GivenNameValidation()
                 && FamilyNameValidation()
                 && NicknameValidation()
                 && EmailValidation()
@@ -99,13 +113,9 @@ namespace BookingLibrary.Data.DTO
             
         }
 
-
-        public bool AvatarValidation()
-        {
-            return true; 
-        }
         public bool GivenNameValidation() 
         {
+            if (GivenName == null) return true;
 
             if( String.IsNullOrEmpty(GivenName) ) return false;
             if (GivenName.Length > 32) return false;
@@ -120,6 +130,7 @@ namespace BookingLibrary.Data.DTO
         }
         public bool FamilyNameValidation()
         {
+            if (FamilyName == null) return true;
 
             if (String.IsNullOrEmpty(FamilyName)) return false;
             if (FamilyName.Length > 32) return false;
@@ -146,6 +157,7 @@ namespace BookingLibrary.Data.DTO
         }
         public bool EmailValidation()
         {
+
             if (String.IsNullOrEmpty(Email)) return false;
             if (Email.Length > 254) return false;
             try
@@ -160,6 +172,8 @@ namespace BookingLibrary.Data.DTO
         }
         public bool PhoneValidation()
         {
+            if (Phone == null) return true;
+
             if (String.IsNullOrEmpty(Phone)) return false;
             if (Phone.Length > 16) return false;
             Regex validatePhoneNumberRegex = new Regex("^\\+?[1-9][0-9]{7,14}$");
@@ -168,7 +182,8 @@ namespace BookingLibrary.Data.DTO
         }
         public bool BirthdayValidation()
         {
-
+            if( Birthday == null) return true;
+            if( Birthday > DateTime.Now.AddYears(-18) ) return false;
             return true;
         }
         public bool GenderValidation()
@@ -177,6 +192,7 @@ namespace BookingLibrary.Data.DTO
         }
         public bool CitizenshipValidation()
         {
+            if (Citizenship == null) return true;
             if (String.IsNullOrEmpty(Citizenship)) return false;
             if (Citizenship.Length > 16) return false;
             return true;

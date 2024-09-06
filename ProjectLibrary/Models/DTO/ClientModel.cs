@@ -24,9 +24,9 @@ namespace ProjectLibrary.Models.DTO
         [JsonPropertyName("email")]
         public string Email { get; set; } = default!;
         [JsonPropertyName("phone")]
-        public string Phone { get; set; } = default!;
+        public string? Phone { get; set; } = default!;
         [JsonPropertyName("birthday")]
-        public DateTime Birthday { get; set; }
+        public DateTime? Birthday { get; set; }
         [JsonPropertyName("gender")]
         public bool? Gender { get; set; }
         [JsonPropertyName("citizenship")]
@@ -38,27 +38,27 @@ namespace ProjectLibrary.Models.DTO
         public static async Task<ClientModel> ToClientModel(IFormCollection form, IFormFileCollection formFiles)
         {
             ClientModel clientModel = new ClientModel();
-            
-            
+
+
+
             string? realName = form["given_name"];
-            clientModel.GivenName = realName ?? throw new ArgumentNullException(nameof(realName ), "ToClientModel Error");
+            clientModel.GivenName = realName;
             string? familyName = form["family_name"];
-            clientModel.FamilyName = realName ?? throw new ArgumentNullException(nameof(familyName), "ToClientModel Error");
+            clientModel.FamilyName = realName;
             string? nickname = form["nickname"];
-            clientModel.Nickname = nickname ?? throw new ArgumentNullException(nameof(nickname), "ToClientModel Error");
+            clientModel.Nickname = nickname;
             string? email = form["email"];
             clientModel.Email = email ?? throw new ArgumentNullException(nameof(email), "ToClientModel Error"); 
             string? phone = form["phone"];
-            clientModel.Phone = phone ?? throw new ArgumentNullException(nameof(phone), "ToClientModel Error"); 
+            clientModel.Phone = phone; 
             string? birthday = form["birthday"];
             clientModel.Birthday = DateTime.Parse(birthday ?? throw new ArgumentNullException(nameof(birthday), "ToClientModel Error")); 
             string? gender = form["gender"];
             clientModel.Gender = Boolean.Parse(gender ?? throw new ArgumentNullException(nameof(gender), "ToClientModel Error"));
             string? citizenship = form["citizenship"];
-            clientModel.Citizenship = citizenship ?? throw new ArgumentNullException(nameof(citizenship), "ToClientModel Error"); 
+            clientModel.Citizenship = citizenship; 
             string? password = form["password"];
             clientModel.Password = password ?? throw new ArgumentNullException(nameof(password), "ToClientModel Error"); ;
-
 
 
             clientModel.Avatar = await FileManager.SaveFile(formFiles[0], "image");

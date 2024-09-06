@@ -72,20 +72,21 @@ namespace Token.API.Controllers
             return ResponseFormat.GetResponceJson(ResponseFormat.TOKEN_VALID, tokenData.Salt);
         }  
 
-        //Розшифровка тексту і перевірка userAgent на коректність
         [HttpGet("decryption/{data}/{iv}")]
         public async Task<Object> Get(string data, string iv)
         {
 
             var tokenServED = TokenServiceED.GetTokenServiceED(_context, Request);
-            var decryptionModel = tokenServED.JsonDecrypt(data, iv);
-            TokenService.GetTokenService(Request, _context ).Check.Check(decryptionModel.UserAgent, Secret, Issuer, Audience);
-            return ResponseFormat.GetResponceJson(ResponseFormat.DATA_DECODED, decryptionModel);
+            var decryptionJson = tokenServED.JsonDecrypt(data, iv);
+            TokenService.GetTokenService(Request, _context ).Check.Check(tokenServED.UserAgentByJsonDecrypt(decryptionJson), Secret, Issuer, Audience);
+            return ResponseFormat.GetResponceJson(ResponseFormat.DATA_DECODED, decryptionJson);
         }
 
         [HttpPost]
-        public async Task<Object> Post(String userAgent)
+        public async Task<Object> Post()
         {
+            string? userAgent = Request.Form["user_agent"];
+            if(  userAgent == null ) return ResponseFormat.USER_AGENT_EMPTY.Responce;
             if (String.IsNullOrEmpty(userAgent)) return ResponseFormat.USER_AGENT_EMPTY.Responce;
             TokenGenerationRequest tokenData = await new TokenGenerationRequest(_context).GetToken(userAgent, Secret, Issuer, Audience);
             return ResponseFormat.GetResponceJson(ResponseFormat.TOKEN_GENERATED, tokenData.TokenGenerationResponse);
@@ -147,17 +148,5 @@ namespace Token.API.Controllers
                 }
             }
         }
-
-        //[HttpDelete]
-        //public async Task<Object> Delete(String tokenId, String userId)
-        //{
-            
-        //    if (String.IsNullOrEmpty(userId)) return ResponceFormat.BadRequest("bad request");
-        //    TokenData? tokenData = _context.TokensData.FirstOrDefault(t => t.UserID == userId && t.ID == tokenId);
-        //    if (tokenData == null) return ResponceFormat.BadRequest("bad request");
-        //    _context.TokensData.Remove(tokenData);
-        //    await _context.SaveChangesAsync();
-        //    return ResponceFormat.OK("token deleted", true);
-        //}
     }
 }
