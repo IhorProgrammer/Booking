@@ -102,6 +102,7 @@ namespace Token.API.Controllers
             clientModel.Password = sub;
             if (email == null) return ResponseFormat.EMAIL_NULL.Exception;
             clientModel.Email = email;
+            clientModel.Nickname = email;
             //Відправляєм на сервер де буде отриимання даних користувача ( токен \ id або ж googleId ) || перегляд даних
             //Post запит на реэстарцыю | авторизація користувача (отримання id)
             throw new Exception("Client ID null");

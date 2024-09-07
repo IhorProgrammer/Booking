@@ -28,11 +28,12 @@ namespace BookingLibrary.Data.DAO
         [Column("family_name")]
         public string? FamilyName { get; set; }
 
-        [MaxLength(32)]
+        [MaxLength(16)]
+        [Required]
         [Column("nickname")]
-        public string? Nickname { get; set; }
+        public string Nickname { get; set; } = default!;
 
-        [MaxLength(32)]
+        [MaxLength(254)]
         [Required]
         [Column("email")]
         public string Email { get; set; } = default!;
@@ -48,16 +49,16 @@ namespace BookingLibrary.Data.DAO
         [Column("gender")]
         public bool? Gender { get; set; }
 
-        [MaxLength(32)]
+        [MaxLength(50)]
         [Column("citizenship")]
         public string? Citizenship { get; set; }
 
-        [MaxLength(36)]
+        [MaxLength(32)]
         [Required]
         [Column("salt")]
         public string Salt { get; set; } = default!;
 
-        [MaxLength(36)]
+        [MaxLength(32)]
         [Required]
         [Column("derived_key")]
         public string DerivedKey { get; set; } = default!;

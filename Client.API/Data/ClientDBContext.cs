@@ -14,13 +14,6 @@ namespace Client.API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Визначення one-to-one відношення
-            modelBuilder.Entity<ClientDAO>()
-            .HasOne(c => c.ClientPasportData)
-            .WithOne(p => p.ClientData)
-            .HasForeignKey<ClientDAO>(c => c.PasportID)
-            .OnDelete(DeleteBehavior.SetNull);
-
             base.OnModelCreating(modelBuilder);
         }
 
@@ -28,7 +21,8 @@ namespace Client.API.Data
         {
             try
             {
-                ClientDAO? clientData = context.ClientData.Where(c => c.Nickname != null && c.Nickname == login).FirstOrDefault();
+                
+                ClientDAO? clientData = await context.ClientData.FirstOrDefaultAsync( c => c.Nickname.Equals(login) );
                 if (clientData == null) throw ResponseFormat.AUTH_INVALID.Exception;
                 string enteredDerivedKey = new Md5Hash().HashString(clientData.Salt + password); 
                 if ( !enteredDerivedKey.Equals( clientData.DerivedKey ) ) throw ResponseFormat.AUTH_INVALID.Exception;
