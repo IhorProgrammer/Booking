@@ -65,7 +65,7 @@ builder.Services.AddSingleton<ILoggerManager>(provider =>
 {
     var config = provider.GetRequiredService<IConfiguration>();
     string connectionString = config.GetConnectionString("LoggerServerConnection") ?? throw new Exception("LoggerServerConnection null");
-    return new LoggerManager(connectionString);
+    return new LoggerManager(connectionString, config);
 });
 builder.Services.AddSingleton<IMessageSender>(provider =>
 {

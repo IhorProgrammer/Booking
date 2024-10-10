@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using BookingLibrary.JsonResponce;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using ProjectLibrary.Models;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -9,16 +11,19 @@ namespace BookingLibrary.Services.LoggerService
     {
         private readonly HttpClient _httpClient = new HttpClient();
         public string LoggerServerConnection { get; private set; }
+        private readonly IConfiguration _configuration;
 
-        public LoggerManager( string connection )
+        public LoggerManager(string connection, IConfiguration configuration)
         {
             LoggerServerConnection = connection;
+            _configuration = configuration;
         }
 
         private void Log( Exception exception, LogLevel logLevel )
         {
             var logModel = new LogModel
             {
+                LogLogger = _configuration["ServerName"] ?? "Error Name".ToString(),
                 Level = logLevel,
                 Message = exception.Message,
                 Stacktrace = String.IsNullOrEmpty(exception.StackTrace) ? "" : exception.StackTrace

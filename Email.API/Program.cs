@@ -1,11 +1,10 @@
+using BookingLibrary.ExceptionMiddleware;
+using BookingLibrary.Services.LoggerService;
+using BookingLibrary.Services.MessageSender;
 using Email.API.Data;
 using Email.API.Services.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using ProjectLibrary.ExceptionMiddleware;
-using ProjectLibrary.Models;
-using ProjectLibrary.Services.LoggerService;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -46,14 +45,27 @@ builder.Services.AddSwaggerGen(options => {
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 Console.WriteLine(connectionString);
-builder.Services.AddDbContext<DBContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-builder.Services.AddSingleton<ILoggerManager, LoggerManager>();
+builder.Services.AddDbContext<EmailDBContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+builder.Services.AddSingleton<ILoggerManager>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    string connectionString = config.GetConnectionString("LoggerServerConnection") ?? throw new Exception("LoggerServerConnection null");
+    return new LoggerManager(connectionString, config);
+});
+builder.Services.AddSingleton<IMessageSender>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    string connectionString = "Email error";
+    return new MessageSender(connectionString);
+});
+
 builder.Services.AddSingleton<IEmail, Email.API.Services.Email.Email>();
 
-builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(nameof(AppSettings)));
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

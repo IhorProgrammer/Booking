@@ -1,4 +1,5 @@
-﻿using BookingLibrary.Helpers.Hash.HashTypes;
+﻿using BookingLibrary.Data.DTO;
+using BookingLibrary.Helpers.Hash.HashTypes;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -14,7 +15,7 @@ namespace BookingLibrary.Data.DAO
         
         [Column("gmail_id")]
         [MaxLength(24)]
-        public string GmailID { get; set; } = default!;
+        public string? GmailID { get; set; } = default!;
         
         [MaxLength(124)]
         [Column("avatar")]
@@ -80,9 +81,19 @@ namespace BookingLibrary.Data.DAO
 
 
 
-        public ClientDAO Clone()
+        public ClientDAO ChangeData(ClientDTO client)
         {
-            return (ClientDAO)this.MemberwiseClone();
+            if( this.Avatar != client.Avatar && client.Avatar != null ) this.Avatar = client.Avatar;
+            if( this.GivenName != client.GivenName && client.GivenName != null ) this.GivenName = client.GivenName;
+            if( this.FamilyName != client.FamilyName && client.FamilyName != null ) this.FamilyName = client.FamilyName;
+            if( this.Nickname != client.NewNickname && client.NewNickname != null ) this.Nickname = client.NewNickname; // Видати помилку якщо nickname є
+            if( this.Phone != client.Phone && client.Phone != null ) this.Phone = client.Phone;
+            // Birthday і Gender не повина змінюватись
+
+            return this;
         }
+
+
+        
     }
 }

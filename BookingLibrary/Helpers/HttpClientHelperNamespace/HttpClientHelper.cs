@@ -16,10 +16,15 @@ namespace BookingLibrary.Helpers.HttpClientHelperNamespace
             return await SendHttpRequestAsync<T>(HttpMethod.Get, endpoint, accessToken, queryParams);
         }
 
-        public static async Task<T?> SendPostRequest<T>(string endpoint, Dictionary<string, string> bodyParams)
+        public static async Task<T?> SendDeleteRequest<T>(string endpoint, Dictionary<string, string> queryParams, string accessToken)
+        {
+            return await SendHttpRequestAsync<T>(HttpMethod.Delete, endpoint, accessToken, queryParams);
+        }
+
+        public static async Task<T?> SendPostRequest<T>(string endpoint, Dictionary<string, string> bodyParams, string? accessToken = null)
         {
             var httpContent = new FormUrlEncodedContent(bodyParams);
-            return await SendHttpRequestAsync<T>(HttpMethod.Post, endpoint, httpContent: httpContent);
+            return await SendHttpRequestAsync<T>(HttpMethod.Post, endpoint, accessToken, httpContent: httpContent);
         }
 
         public static async Task SendPutRequest(string endpoint, Dictionary<string, string> queryParams, object body, string accessToken)

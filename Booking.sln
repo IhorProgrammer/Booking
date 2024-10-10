@@ -25,9 +25,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Email.API", "Email.API\Email.API.csproj", "{BA8268DE-0759-47B0-9A13-CC2CD7D0C7E3}"
-	ProjectSection(ProjectDependencies) = postProject
-		{D0C9B359-1FB7-45C2-885D-4D214A67AB9F} = {D0C9B359-1FB7-45C2-885D-4D214A67AB9F}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BookingLibrary", "BookingLibrary\BookingLibrary.csproj", "{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}"
 EndProject

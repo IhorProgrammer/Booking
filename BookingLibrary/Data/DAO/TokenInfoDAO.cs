@@ -1,11 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using ProjectLibrary.Data.Entities;
 
-namespace Email.API.Data.Entities
+namespace BookingLibrary.Data.DAO
 {
     [Table("token_info")]
-    public class TokenInfoData
+    public class TokenInfoDAO
     {
         [Key]
         [MaxLength(36)]
@@ -18,6 +17,6 @@ namespace Email.API.Data.Entities
         public string UserID { get; set; } = default!;
 
 
-        public UserInfoData? UserInfoData { get; set; }
+        public UserInfoDAO? UserInfoData { get; set; }
     }
 }

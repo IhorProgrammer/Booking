@@ -7,10 +7,12 @@ namespace Logger.API.Models
     public class LogModel
     {
         [JsonPropertyName("log_level")]
-        public LogLevel Level { get; set; }
+        public LogLevel Level { get; set; } = default!;
+        [JsonPropertyName("log_logger")]
+        public string LogLogger { get; set; } = default!;
         [JsonPropertyName("message")]
-        public string Message { get; set; }
+        public string Message { get; set; } = default!;
         [JsonPropertyName("stacktrace")]
-        public string? Stacktrace { get; set; }
+        public string? Stacktrace { get; set; } = default!;
     }
 }

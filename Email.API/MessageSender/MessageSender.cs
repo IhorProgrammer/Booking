@@ -1,6 +1,6 @@
-﻿using Email.API.Models;
+﻿using BookingLibrary.Services.MessageSender;
+using Email.API.Models;
 using Email.API.Services.Email;
-using ProjectLibrary.Services.MessageSender;
 
 namespace Email.API.MessageSender
 {
@@ -14,14 +14,15 @@ namespace Email.API.MessageSender
         }
 
 
-        public bool SendByType(EmailModel model, MessageSenderTypes types ) 
+        public bool SendByType(EmailModel model, string typeName ) 
         {
-            switch (types) 
+            switch (typeName.ToLower()) 
             { 
-                case MessageSenderTypes.Unauthorized: return Unauthorized(model);
-                case MessageSenderTypes.LoginAgain: return LoginAgain(model);
-                case MessageSenderTypes.Authorization: return Authorization(model);
-                case MessageSenderTypes.Registration: return Registration(model);
+                case "hacker": return Unauthorized(model);
+                case "loginagain": return LoginAgain(model);
+                case "authorization": return Authorization(model);
+                case "registration": return Registration(model);
+                case "unauthorized": return Unauthorized(model);
 
                 default: return false;
             }

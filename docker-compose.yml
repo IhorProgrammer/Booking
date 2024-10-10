@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  logger-api:
+  logger_api:
     container_name: logger_api
     build:
       context: ./Logger.API
@@ -13,8 +13,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
   
-  email-api:
-    container_name: email-api
+  email_api:
+    container_name: email_api
     build:
       context: ./
       dockerfile: Dockerfile.email
@@ -25,8 +25,60 @@ services:
     environment:
         - ASPNETCORE_ENVIRONMENT=Development
         - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=emails;user=admin;password=rNZzq5U37DqJlNe;
-        - ConnectionStrings__LoggerServerConnection=http://localhost:5080
-        - AppSettings__FromName=Booking2
+        - ConnectionStrings__LoggerServerConnection=http://logger_api:8080
+        - AppSettings__FromName=Booking
+        - AppSettings__EmailFrom=bookingtesting73@gmail.com
+        - AppSettings__EmailFromPassword=lwdk cigc xnfs xpav
+
+  client_api:
+    container_name: client_api
+    build:
+      context: ./
+      dockerfile: Dockerfile.client
+    ports:
+      - "5082:8080"
+    networks:
+      - booking_network
+    environment:
+        - ASPNETCORE_ENVIRONMENT=Development
+        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=booking;user=admin;password=rNZzq5U37DqJlNe;
+        - ConnectionStrings__LoggerServerConnection=http://logger_api:8080
+        - ConnectionStrings__EmailServerConnection=http://email_api:8080
+        - ConnectionStrings__TokenServerConnection=http://token_api:8080
+        - ServerName=Client_API
+
+  token_api:
+    container_name: token_api
+    build:
+      context: ./
+      dockerfile: Dockerfile.token
+    ports:
+      - "5083:8080"
+    networks:
+      - booking_network
+    environment:
+        - ASPNETCORE_ENVIRONMENT=Development
+        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=booking;user=admin;password=rNZzq5U37DqJlNe;
+        - ConnectionStrings__LoggerServerConnection=http://logger_api:8080
+        - ConnectionStrings__EmailServerConnection=http://email_api:8080
+        - ConnectionStrings__TokenServerConnection=http://token_api:8080
+        - ConnectionStrings__ClientServerConnection=http://client_api:8080
+        - ServerName=Token_API
+        - AppSettings__Secret=8c8624e2-2afc-76a5-649e-9b9bf15cf6d3
+        - AppSettings__Issuer=TokenAPI
+        - AppSettings__Audience=Users
+        
+        - Authentication__Facebook__AppId=1419406528732031
+        - Authentication__Facebook__AppSecret=19db9c5986b4a812c449068adb0e9d47
+
+        - Authentication__Google__REDIRECT_URL=http://localhost:5083/google/code
+        - Authentication__Google__PROFILE_SCOPE=https://www.googleapis.com/auth/userinfo.profile
+        - Authentication__Google__EMAIL_SCOPE=https://www.googleapis.com/auth/userinfo.email
+        - Authentication__Google__PKCE_SESSION_KEY=codeVerifier
+        - Authentication__Google__ENDPOINT_URL=http://127.0.0.1:5500/AuthUserInfo.html
+        - Authentication__Google__CLIENT_ID=711827789320-nb53rqb07tpb7g8teohd7a3hjmvro5iv.apps.googleusercontent.com
+        - Authentication__Google__CLIENT_SECRET=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
+
 
   db_mysql:
     container_name: db_mysql

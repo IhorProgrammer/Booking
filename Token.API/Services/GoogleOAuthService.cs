@@ -6,16 +6,16 @@ namespace Token.API.Services
 {
     public class GoogleOAuthService
     {
-        private const string ClientId = "711827789320-nb53rqb07tpb7g8teohd7a3hjmvro5iv.apps.googleusercontent.com";
-        private const string ClientSecret = "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";
+        //private const string ClientId = "711827789320-nb53rqb07tpb7g8teohd7a3hjmvro5iv.apps.googleusercontent.com";
+        //private const string ClientSecret = "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";
         private const string OAuthServerEndpoint = "https://accounts.google.com/o/oauth2/v2/auth";
         private const string TokenServerEndpoint = "https://oauth2.googleapis.com/token";
 
-        public static string GenerateOAuthRequestUrl(string scope, string redirectUrl, string codeChellange, string state)
+        public static string GenerateOAuthRequestUrl(string scope, string redirectUrl, string codeChellange, string state, string clientId)
         {
             Dictionary<string, string?> queryParams = new Dictionary<string, string?>
             {
-                { "client_id", ClientId },
+                { "client_id", clientId },
                 { "redirect_uri", redirectUrl },
                 { "response_type", "code" },
                 { "scope", scope },
@@ -29,12 +29,12 @@ namespace Token.API.Services
             return url;
         }
 
-        public static async Task<GoogleOAuthTokenResult?> ExchangeCodeOnTokenAsync(string code, string codeVerifier, string redirectUrl)
+        public static async Task<GoogleOAuthTokenResult?> ExchangeCodeOnTokenAsync(string code, string codeVerifier, string redirectUrl, string clientId, string clientSecret)
         {
             var authParams = new Dictionary<string, string>
             {
-                { "client_id", ClientId },
-                { "client_secret", ClientSecret },
+                { "client_id", clientId },
+                { "client_secret", clientSecret },
                 { "code", code },
                 { "code_verifier", codeVerifier },
                 { "grant_type", "authorization_code" },
@@ -43,16 +43,16 @@ namespace Token.API.Services
 
 
 
-            var tokenResult = await HttpClientHelper.SendPostRequest<GoogleOAuthTokenResult>(TokenServerEndpoint, authParams);
+            var tokenResult = await HttpClientHelper.SendPostRequest<GoogleOAuthTokenResult>(TokenServerEndpoint, authParams, null);
             return tokenResult;
         }
 
-        public static async Task<GoogleOAuthTokenResult?> RefreshTokenAsync(string refreshToken)
+        public static async Task<GoogleOAuthTokenResult?> RefreshTokenAsync(string refreshToken, string clientId, string clientSecret)
         {
             var refreshParams = new Dictionary<string, string>
             {
-                { "client_id", ClientId },
-                { "client_secret", ClientSecret },
+                { "client_id", clientId },
+                { "client_secret", clientSecret },
                 { "grant_type", "refresh_token" },
                 { "refresh_token", refreshToken }
             };

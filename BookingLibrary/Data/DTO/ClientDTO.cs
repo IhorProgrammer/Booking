@@ -25,6 +25,9 @@ namespace BookingLibrary.Data.DTO
 
         [JsonPropertyName("nickname")]
         public string? Nickname { get; set; } = null;
+
+        [JsonPropertyName("new_nickname")]
+        public string? NewNickname { get; set; } = null;
         [JsonPropertyName("email")]
         public string Email { get; set; } = default!;
         [JsonPropertyName("phone")]
@@ -39,6 +42,24 @@ namespace BookingLibrary.Data.DTO
         public string? Password { get; set; } = null;
 
 
+        public Dictionary<string, string?> ToDictionarySS()
+        {
+            return new Dictionary<string, string?>
+            {
+                { "id", this.ClientID },
+                { "avatar", this.Avatar },
+                { "gmail_id", this.GmailID },
+                { "given_name", this.GivenName },
+                { "family_name", this.FamilyName },
+                { "nickname", this.Nickname },
+                { "email", this.Email },
+                { "phone", this.Phone },
+                { "birthday", this.Birthday.ToString() },
+                { "gender", this.Gender.ToString() },
+                { "citizenship", this.Citizenship },
+                { "password", this.Password },                
+            };
+        }
         public static async Task<ClientDTO> ToClientModel(IFormCollection form, IFormFileCollection formFiles)
         {
             ClientDTO clientModel = new ClientDTO();
@@ -52,15 +73,24 @@ namespace BookingLibrary.Data.DTO
                 clientModel.Email = email ?? throw new ArgumentNullException(nameof(email), "ToClientModel Error");
                 clientModel.Phone = form["phone"];
                 string? birthday = form["birthday"];
-                clientModel.Birthday = birthday != null ? DateTime.Parse(birthday) : null;
+                clientModel.Birthday = !String.IsNullOrEmpty(birthday) ? DateTime.Parse(birthday) : null;
                 string? gender = form["gender"];
-                clientModel.Gender = gender != null ? Boolean.Parse(gender) : null;
+                clientModel.Gender = !String.IsNullOrEmpty(gender) ? Boolean.Parse(gender) : null;
 
                 clientModel.Citizenship = form["citizenship"];
                 string? password = form["password"];
                 clientModel.Password = password ?? throw new ArgumentNullException(nameof(password), "ToClientModel Error"); ;
 
-                if (formFiles[0] != null)
+                clientModel.Avatar = form["avatar"];
+                clientModel.GmailID = form["gmail_id"];
+
+                string? clientID = form["id"];
+                if(clientID != null) clientModel.ClientID = clientID;
+
+                clientModel.NewNickname = form["new_nickname"];
+
+
+                if (formFiles.Count >= 1 && formFiles[0] != null)
                 {
                     string ext = Path.GetExtension(formFiles[0].FileName).ToLower();
                     string[] allowedExtensions = { ".png", ".jpg", ".jpeg", ".gif" };

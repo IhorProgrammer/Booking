@@ -1,20 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Net.Mail;
-using System.Net;
+﻿using Microsoft.AspNetCore.Mvc;
 using Email.API.Services.Email;
 using Email.API.Models;
-using Microsoft.Extensions.Configuration;
-using ProjectLibrary.Services.TokenService;
 using Email.API.Data;
-using Microsoft.EntityFrameworkCore;
-using Email.API.Data.Entities;
-using ProjectLibrary.Services.LoggerService;
-using ProjectLibrary.Models;
 using Microsoft.Extensions.Options;
-using Email.API.MessageSender;
-using ProjectLibrary.Services.JsonResponce;
-using ProjectLibrary.Services.MessageSender;
+using BookingLibrary.Data.DAO;
+using Email.API.ResponseFormatExtended;
+using BookingLibrary.Token;
 
 namespace Email.API.Controllers
 {
@@ -22,106 +13,82 @@ namespace Email.API.Controllers
     [ApiController]
     public class EmailController : ControllerBase
     {
-
         private readonly IEmail _email;
         private readonly IConfiguration _configuration;
-        private readonly DBContext _context;
-        private readonly ILoggerManager _loggerManager;
-        private readonly AppSettings _appSettings;
+        private readonly EmailDBContext _context;
 
-        public EmailController(IEmail email, IConfiguration configuration, DBContext context, ILoggerManager loggerManager, IOptions<AppSettings> appSettings)
+
+        public string EmailFromPassword => _configuration["AppSettings:EmailFromPassword"] ?? throw ResponseFormat.APP_SETTINGS_EmailFromPassword.Exception;
+        public string EmailFrom => _configuration["AppSettings:EmailFrom"] ?? throw ResponseFormat.APP_SETTINGS_EmailFrom.Exception;
+        public string FromName => _configuration["AppSettings:FromName"] ?? throw ResponseFormat.APP_SETTINGS_FromName.Exception;
+
+
+        public EmailController(IEmail email, IConfiguration configuration, EmailDBContext context)
         {
             _email = email;
             _configuration = configuration;
             _context = context;
-            _loggerManager = loggerManager;
-            _appSettings = appSettings.Value;
-
-            if (String.IsNullOrEmpty(_appSettings.EmailFromPassword)) _loggerManager.LogError(new ArgumentNullException(nameof(_appSettings.EmailFromPassword)));
-            if (String.IsNullOrEmpty(_appSettings.EmailFrom)) _loggerManager.LogError(new ArgumentNullException(nameof(_appSettings.EmailFrom)));
-            if (String.IsNullOrEmpty(_appSettings.FromName)) _loggerManager.LogError(new ArgumentNullException(nameof(_appSettings.FromName)));
-
         }
 
         [HttpGet("{type}")]
-        public async Task<bool> Get(int type)
+        public async Task<object> Get(string type)
         {
-            TokenService tokenService = new TokenService(_configuration);
-            string? token = tokenService.GetJWTTokenByRequest(Request);
-            if (token == null)
-            {
-                throw new ArgumentNullException("Token null");
-            }
-            string? token_id = tokenService.GetTokenId(token);
-            if (String.IsNullOrEmpty(token_id)) throw new ArgumentNullException("Salt empty", nameof(token_id));
+            string token_id = TokenJWT.GetTokenJWT(Request).TokenId;
 
-
-            TokenInfoData? tokenInfoData = await _context.TokenInfoData.FindAsync(token_id);
+            TokenInfoDAO? tokenInfoData = await _context.TokenInfoData.FindAsync(token_id);
             if (tokenInfoData == null) throw new ArgumentNullException("Token emty: " + token_id, nameof(token_id));
-            UserInfoData? userInfoData = await _context.UserInfoData.FindAsync(tokenInfoData.UserID);
+            UserInfoDAO? userInfoData = await _context.UserInfoData.FindAsync(tokenInfoData.UserID);
             if (userInfoData == null)
             {
-                _loggerManager.LogError(new Exception($"UserInfoData null. TokenId: {token_id}"));
-                return false;
+                throw ResponseFormat.EMAIL_USER_DONT_FIND.ExceptionF(new Exception($"UserInfoData null. TokenId: {token_id}"));
             }
 
             string? email = userInfoData.Email;
-            if (email == null) _loggerManager.LogError(new Exception($"UserInfoData null. TokenId: {token_id}"));
-
-
-            if (_appSettings.EmailFrom == null || _appSettings.EmailFromPassword == null || _appSettings.FromName == null || email == null)
+            if (email == null)
             {
-                _loggerManager.LogError(new Exception("_appSettings null"));
-                return false;
+                throw ResponseFormat.EMAIL_EMAIL_DONT_FIND.ExceptionF(new Exception($"UserInfoData null. TokenId: {token_id}")).LogLevelSet(LogLevel.Error);
             }
+            
             EmailModel emailModel = new EmailModel()
             {
-                From = _appSettings.EmailFrom,
-                FromPassword = _appSettings.EmailFromPassword,
-                FromName = _appSettings.FromName,
+                From = EmailFrom,
+                FromPassword = EmailFromPassword,
+                FromName = FromName,
                 To = email,
                 ToName = "Client",
             };
             try
             {
-                bool res = new MessageSender.MessageSender(_email).SendByType(emailModel, (MessageSenderTypes)type);
+                bool res = new MessageSender.MessageSender(_email).SendByType(emailModel, type);
                 return res;
             }
             catch (Exception ex)
             {
-                _loggerManager.LogWarning(ex);
+                throw ResponseFormat.EMAIL_MESSAGE_DONT_SEND.ExceptionF(ex).LogLevelSet(LogLevel.Critical);
             }
-
-            return false;
         }
 
 
         [HttpPost]
         public async Task<object> Post(PostRequestModel model)
         {
-            TokenService tokenService = new TokenService(_configuration);
-            string? token = tokenService.GetJWTTokenByRequest(Request);
-            string? token_id = null;
-            if ( token != null )
+            string token_id = model.TokenID;
+            if (string.IsNullOrEmpty(token_id)) { token_id = TokenJWT.GetTokenJWT(Request).TokenId; }
+
+            bool userInfoDataCreated = false;
+            UserInfoDAO? userInfoData = await _context.UserInfoData.FindAsync(model.UserID);
+            if(userInfoData == null)
             {
-                token_id = tokenService.GetTokenId(token);
-            } else 
-            {
-                token_id = model.TokenID;
+                userInfoData = new UserInfoDAO() { Email = model.Email, UserID = model.UserID };
+                userInfoDataCreated = true;
             }
+            TokenInfoDAO tokenInfoData = new TokenInfoDAO() { TokenID = token_id, UserID = model.UserID };
 
-            if (String.IsNullOrEmpty(token_id)) throw new Exception("TokenID empty");
-
-            UserInfoData? userInfoData = await _context.UserInfoData.FindAsync(model.UserID);
-            if(userInfoData == null) 
-                userInfoData = new UserInfoData() { Email = model.Email, UserID = model.UserID };
-            TokenInfoData tokenInfoData = new TokenInfoData() { TokenID = token_id, UserID = model.UserID };
-
-            await _context.UserInfoData.AddAsync(userInfoData);
+            if(userInfoDataCreated) await _context.UserInfoData.AddAsync(userInfoData);
             await _context.TokenInfoData.AddAsync(tokenInfoData);
             await _context.SaveChangesAsync();
 
-            return ResponseFormat.Created("Token Added", true);
+            return ResponseFormat.EMAIL_TOKEN_CREATED.Responce;
         }
 
 
@@ -129,34 +96,33 @@ namespace Email.API.Controllers
         [HttpPut]
         public async Task<object> Put(string email)
         {
-            TokenService tokenService = new TokenService(_configuration);
-            string? token = tokenService.GetJWTTokenByRequest(Request);
-            if (token == null)
-            {
-                throw new ArgumentNullException("Token null");
-            }
-            string? token_id = tokenService.GetTokenId(token);
-            if (String.IsNullOrEmpty(token_id)) throw new ArgumentNullException("Salt empty", nameof(token_id));
+            string token_id = TokenJWT.GetTokenJWT(Request).TokenId;
 
-            TokenInfoData? tokenInfoData = await _context.TokenInfoData.FindAsync(token_id);
+            TokenInfoDAO? tokenInfoData = await _context.TokenInfoData.FindAsync(token_id);
             if (tokenInfoData == null) throw new ArgumentNullException("Token emty: " + token_id, nameof(token_id));
-            UserInfoData? userInfoData = await _context.UserInfoData.FindAsync(tokenInfoData.UserID);
+            UserInfoDAO? userInfoData = await _context.UserInfoData.FindAsync(tokenInfoData.UserID);
             if (userInfoData == null)
             {
-                _loggerManager.LogError(new Exception($"UserInfoData null. TokenId: {token_id}"));
-                return ResponseFormat.BadRequest("No user found");
+                throw ResponseFormat.EMAIL_USER_DONT_FIND.ExceptionF(new Exception($"UserInfoData null. TokenId: {token_id}")).LogLevelSet(LogLevel.Error);
             }
 
             userInfoData.Email = email;
             await _context.SaveChangesAsync();
             
-            return ResponseFormat.OK("The email address has been changed", true);
+            return ResponseFormat.EMAIL_TOKEN_CHANGED.Responce;
         }
 
         [HttpDelete]
-        public object Delete( )
+        public async Task<object> Delete(string token_id)
         {
-            return ResponseFormat.OK("Hello", _configuration.GetConnectionString("DefaultConnection"));
+            TokenInfoDAO? tokenInfoData = await _context.TokenInfoData.FindAsync(token_id);
+            if (tokenInfoData != null)
+            {
+                _context.Remove(tokenInfoData);
+                _context.SaveChanges();
+            }
+
+            return ResponseFormat.EMAIL_TOKEN_DELETED.Responce;
         }
 
     }

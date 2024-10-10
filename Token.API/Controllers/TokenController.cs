@@ -1,11 +1,15 @@
 ﻿using AutoMapper;
 using BookingLibrary.Data;
 using BookingLibrary.Data.DAO;
+using BookingLibrary.Data.DTO;
 using BookingLibrary.Helpers.Hash;
 using BookingLibrary.Helpers.Hash.HashTypes;
+using BookingLibrary.Helpers.HttpClientHelperNamespace;
 using BookingLibrary.JsonResponce;
 using BookingLibrary.Services.LoggerService;
 using BookingLibrary.Services.MessageSender;
+using BookingLibrary.Services.TokenService.Model;
+using BookingLibrary.Token;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
@@ -45,25 +49,48 @@ namespace Token.API.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet("session/{clientId}")]
-        public async Task<Object> GetSessions(string userAgent, string clientId)
+        [HttpGet("session/{data}/{iv}")]
+        public async Task<Object> GetSessions(string data, string iv)
         {
-            var tokenCheckRequest = TokenService.GetTokenService(Request, _context).Check.Check(userAgent, Secret, Issuer, Audience);
-            return ResponseFormat.GetResponceJson(ResponseFormat.GET_SESSION_OK, await TokenDBContext.FindTokensAsync(clientId, _context));
+            var tokenServED = TokenServiceED.GetTokenServiceED(_context, Request);
+            var decryptionJson = tokenServED.JsonDecrypt(data, iv);
+            TokenService.GetTokenService(Request, _context).Check.Check(tokenServED.UserAgentByJsonDecrypt(decryptionJson), Secret, Issuer, Audience);
+            EncryptionDecryptionModel<GetSessionRequest>? jsonResponseFormat = JsonSerializer.Deserialize< EncryptionDecryptionModel<GetSessionRequest> >(decryptionJson);
+            List<TokenDAO> listTokensDAO = await TokenDBContext.FindTokensAsync(jsonResponseFormat.Data.ClientID, _context);
+            List<TokenDTO> listTokensDTO = _mapper.Map<List<TokenDTO>>(listTokensDAO);
+            return ResponseFormat.GetResponceJson(ResponseFormat.GET_SESSION_OK, listTokensDTO);
         }
 
-        [HttpDelete("session/{clientId}")]
-        public async Task<Object> DeleteSessions(string userAgent, string clientId)
+        [HttpDelete("session/{data}/{iv}")]
+        public async Task<Object> DeleteSessions(string data, string iv)
         {
-            var tokenCheckRequest = TokenService.GetTokenService(Request, _context).Check.Check(userAgent, Secret, Issuer, Audience);
-            if(await TokenDBContext.DeleteTokenAsync(clientId, _context) == true)
+            var tokenServED = TokenServiceED.GetTokenServiceED(_context, Request);
+            var decryptionJson = tokenServED.JsonDecrypt(data, iv);
+            TokenService.GetTokenService(Request, _context).Check.Check(tokenServED.UserAgentByJsonDecrypt(decryptionJson), Secret, Issuer, Audience);
+            EncryptionDecryptionModel<DeleteSessionRequest>? encryption = JsonSerializer.Deserialize<EncryptionDecryptionModel<DeleteSessionRequest>>(decryptionJson);
+
+            //EmailDelete
+
+            var delParams = new Dictionary<string, string>
+            {
+                { "token_id", encryption.Data.TokenID },
+            };
+            string? connection = _configuration.GetConnectionString("EmailServerConnection");
+            if (connection == null)
+            {
+                _loggerManager.LogError(new ArgumentNullException("EmailServerConnection null", nameof(connection)));
+                return ResponseFormat.SERVER_ERROR.Responce;
+            }
+            var tokenResult = await HttpClientHelper.SendDeleteRequest<JsonResponseFormat<object>>(connection, delParams, tokenServED.Full);
+
+            if (await TokenDBContext.DeleteTokenAsync(encryption.Data.TokenID, _context) == true)
             {
                 return ResponseFormat.GetResponceJson(ResponseFormat.REMOVE_SESSION_OK, true);
             }
             return ResponseFormat.GetResponceJson(ResponseFormat.REMOVE_SESSION_FAIL, false);
         }
 
-        [HttpGet("{userAgent}")]
+        [HttpGet("token-check/{userAgent}")]
         public async Task<Object> Get(string userAgent)
         {
             var tokenCheckRequest = TokenService.GetTokenService(Request, _context).Check.Check(userAgent, Secret, Issuer, Audience);
@@ -93,25 +120,20 @@ namespace Token.API.Controllers
         }
 
         [HttpPut]
-        public async Task<Object> Put([FromBody] PutRequestModel requestModel)
+        public async Task<Object> Put(PutRequestModel requestModel)
         {
-            string? tokenId = null;
-            TokenService tokenService = TokenService.GetTokenService(Request, _context);
-            TokenJWTCheck tokenJWTCheck = tokenService.Check;
-            if ( !String.IsNullOrEmpty(requestModel.TokenId ) )
-            {
-                tokenId = requestModel.TokenId;
-                if (tokenId == null) return ResponseFormat.JWT_NOT_FOUND.Responce;
-            } 
-            else
-            {
-                tokenId = tokenJWTCheck.Check(requestModel.UserAgent ?? "", Secret, Issuer, Audience).TokenId;
-            }
-            if( tokenId == null ) return ResponseFormat.JWT_NOT_FOUND.Responce;
 
+            string? tokenId = requestModel.TokenId;
+            TokenJWT tokenJWT = TokenJWT.GetTokenJWT(Request);
+            if (tokenId == null)
+            {
+                tokenId = tokenJWT.TokenId;
+                if (tokenId == null) return ResponseFormat.JWT_NOT_FOUND.Responce;
+            }
 
             //find tokenData and update tokenUsed
-            await TokenDBContext.Subscribe(tokenId, requestModel.UserId, _context);
+            await TokenDBContext.Subscribe(tokenId, requestModel.UserId, tokenJWT.Token,  _context);
+
 
 
             using (HttpClient httpClient = new HttpClient())

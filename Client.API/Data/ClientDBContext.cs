@@ -14,25 +14,28 @@ namespace Client.API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ClientDAO>().Property(c => c.Nickname).HasColumnName("nickname").HasMaxLength(160);
+
             base.OnModelCreating(modelBuilder);
         }
 
         public static async Task<ClientDAO> AuthAsync(string login, string password, ClientDBContext context)
         {
-            try
-            {
-                
-                ClientDAO? clientData = await context.ClientData.FirstOrDefaultAsync( c => c.Nickname.Equals(login) );
-                if (clientData == null) throw ResponseFormat.AUTH_INVALID.Exception;
-                string enteredDerivedKey = new Md5Hash().HashString(clientData.Salt + password); 
-                if ( !enteredDerivedKey.Equals( clientData.DerivedKey ) ) throw ResponseFormat.AUTH_INVALID.Exception;
-                return clientData;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            ClientDAO? clientData = await context.ClientData.FirstOrDefaultAsync( c => c.Nickname != null && c.Nickname == login);
+
+            if (clientData == null) throw ResponseFormat.AUTH_INVALID.Exception;
+            string enteredDerivedKey = new Md5Hash().HashString(clientData.Salt + password); 
+            if ( !enteredDerivedKey.Equals( clientData.DerivedKey ) ) throw ResponseFormat.AUTH_INVALID.Exception;
+            return clientData;
         }
 
+        public static async Task<ClientDAO> AuthEmailAsync(string gmail, string password, ClientDBContext context)
+        {
+            ClientDAO? clientData = await context.ClientData.FirstOrDefaultAsync(c => c.Email != null && c.Email == gmail);
+            if (clientData == null) throw ResponseFormat.AUTH_INVALID.Exception;
+            string enteredDerivedKey = new Md5Hash().HashString(clientData.Salt + password);
+            if (!enteredDerivedKey.Equals(clientData.DerivedKey)) throw ResponseFormat.AUTH_INVALID.Exception;
+            return clientData;
+        }
     }
 }

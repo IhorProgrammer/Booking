@@ -1,6 +1,6 @@
 ﻿using BookingLibrary.JsonResponce;
 using Microsoft.AspNetCore.Http;
-
+using System.IdentityModel.Tokens.Jwt;
 
 namespace BookingLibrary.Token
 {
@@ -45,5 +45,24 @@ namespace BookingLibrary.Token
             }
         }
 
+        private string tokenId = "";
+        public string TokenId
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(tokenId)) return tokenId;
+                return GetTokenIDByJWT(Token);
+            }
+        }
+
+        public static string GetTokenIDByJWT( string token )
+        {
+            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtToken = handler.ReadJwtToken(token);
+            string? tokenIdTemp = jwtToken.Claims.FirstOrDefault(c => c.Type == "token_id")?.Value;
+            if (tokenIdTemp == null) throw ResponseFormat.TOKEN_ID_INVALID.Exception;
+            string tokenId = tokenIdTemp;
+            return tokenId;
+        }
     }
 }

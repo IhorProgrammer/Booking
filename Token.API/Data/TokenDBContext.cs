@@ -62,13 +62,13 @@ namespace BookingLibrary.Data
             return await context.TokensData.Where(t => t.UserID.Equals(userId)).ToListAsync();
         }
 
-        public static async Task<TokenDAO> Subscribe(string tokenId, string clientId, TokenDBContext context)
+        public static async Task<TokenDAO> Subscribe(string tokenId, string clientId, string jwt, TokenDBContext context)
         {
             TokenDAO? tokenData = await FindTokenAsync(tokenId, context);
             if (tokenData == null) throw ResponseFormat.TOKEN_ID_INVALID.Exception;
             if (tokenData.UserID != null)
             {
-                throw ResponseFormat.LOGIN_AGAIN.Exception;
+                throw ResponseFormat.LOGIN_AGAIN(jwt).Exception;
             }
             tokenData.UserID = clientId;
             tokenData.TokenUsed = DateTime.UtcNow;
