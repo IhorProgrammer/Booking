@@ -1,31 +1,16 @@
-using BookingLibrary.Data.Mapping;
+
 using BookingLibrary.ExceptionMiddleware;
 using BookingLibrary.Services.LoggerService;
-using BookingLibrary.Services.MessageSender;
-using BookingLibrary.Services.TokenService;
-using Client.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-
+using Residence.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddAutoMapper(typeof(MappingProfile));
-
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAllOrigins",
-        builder =>
-        {
-            builder.AllowAnyOrigin()
-                   .AllowAnyHeader()
-                   .AllowAnyMethod();
-        });
-});
 
 builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options => {
@@ -60,27 +45,18 @@ builder.Services.AddSwaggerGen(options => {
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ClientDBContext>( options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+builder.Services.AddDbContext<ResidenceDBContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 builder.Services.AddSingleton<ILoggerManager>(provider =>
 {
     var config = provider.GetRequiredService<IConfiguration>();
     string connectionString = config.GetConnectionString("LoggerServerConnection") ?? throw new Exception("LoggerServerConnection null");
     return new LoggerManager(connectionString, config);
 });
-builder.Services.AddSingleton<IMessageSender>(provider =>
-{
-    var config = provider.GetRequiredService<IConfiguration>();
-    string connectionString = config.GetConnectionString("EmailServerConnection") ?? throw new Exception("EmailServerConnection null");
-    return new MessageSender(connectionString);
-});
-builder.Services.AddSingleton<TokenServer>();
-
 
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseCors("AllowAllOrigins");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

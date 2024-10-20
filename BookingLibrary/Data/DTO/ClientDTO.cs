@@ -96,6 +96,8 @@ namespace BookingLibrary.Data.DTO
                     string[] allowedExtensions = { ".png", ".jpg", ".jpeg", ".gif" };
                     if (allowedExtensions.Contains(ext))
                     {
+                        string imagePath = Path.Combine("image");
+                        Directory.CreateDirectory(imagePath);
                         clientModel.Avatar = await FileManager.SaveFile(formFiles[0], "image");
                     }
                     else

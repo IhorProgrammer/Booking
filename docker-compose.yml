@@ -29,6 +29,7 @@ services:
         - AppSettings__FromName=Booking
         - AppSettings__EmailFrom=bookingtesting73@gmail.com
         - AppSettings__EmailFromPassword=lwdk cigc xnfs xpav
+        - ServerName=Email_API
 
   client_api:
     container_name: client_api
@@ -110,7 +111,7 @@ services:
 
 networks:
   booking_network:
-    driver: bridge
+    driver: booking_network
     external: true
 
 volumes:
