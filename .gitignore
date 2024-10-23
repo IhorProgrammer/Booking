@@ -365,3 +365,4 @@ FodyWeavers.xsd
 /Client.API/appsettings.json
 /Email.API/appsettings.json
 /Token.API/appsettings.json
+/mysql_data
