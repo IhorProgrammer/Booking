@@ -28,7 +28,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Email.API", "Email.API\Emai
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BookingLibrary", "BookingLibrary\BookingLibrary.csproj", "{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Residence", "Residence\Residence.csproj", "{23686D1F-A5CB-4EA9-AD90-BA159AAD09AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Residence.API", "Residence\Residence.API.csproj", "{23686D1F-A5CB-4EA9-AD90-BA159AAD09AE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9C512974-F2EB-4B6E-A7C4-D95E88DF81A5} = {9C512974-F2EB-4B6E-A7C4-D95E88DF81A5}
 	EndProjectSection

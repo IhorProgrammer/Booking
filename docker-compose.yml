@@ -24,7 +24,7 @@ services:
       - booking_network
     environment:
         - ASPNETCORE_ENVIRONMENT=Development
-        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=emails;user=admin;password=rNZzq5U37DqJlNe;
+        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=emails;user=admin;password=rNZzq5U37DqJlNe;AllowPublicKeyRetrieval=True;
         - ConnectionStrings__LoggerServerConnection=http://logger_api:8080
         - AppSettings__FromName=Booking
         - AppSettings__EmailFrom=bookingtesting73@gmail.com
@@ -42,11 +42,13 @@ services:
       - booking_network
     environment:
         - ASPNETCORE_ENVIRONMENT=Development
-        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=booking;user=admin;password=rNZzq5U37DqJlNe;
+        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=booking;user=admin;password=rNZzq5U37DqJlNe;AllowPublicKeyRetrieval=True;
         - ConnectionStrings__LoggerServerConnection=http://logger_api:8080
         - ConnectionStrings__EmailServerConnection=http://email_api:8080
         - ConnectionStrings__TokenServerConnection=http://token_api:8080
         - ServerName=Client_API
+    volumes:
+       - ./client_data:/app/image
 
   token_api:
     container_name: token_api
@@ -59,7 +61,7 @@ services:
       - booking_network
     environment:
         - ASPNETCORE_ENVIRONMENT=Development
-        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=booking;user=admin;password=rNZzq5U37DqJlNe;
+        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=booking;user=admin;password=rNZzq5U37DqJlNe;AllowPublicKeyRetrieval=True;
         - ConnectionStrings__LoggerServerConnection=http://logger_api:8080
         - ConnectionStrings__EmailServerConnection=http://email_api:8080
         - ConnectionStrings__TokenServerConnection=http://token_api:8080
@@ -76,7 +78,7 @@ services:
         - Authentication__Google__PROFILE_SCOPE=https://www.googleapis.com/auth/userinfo.profile
         - Authentication__Google__EMAIL_SCOPE=https://www.googleapis.com/auth/userinfo.email
         - Authentication__Google__PKCE_SESSION_KEY=codeVerifier
-        - Authentication__Google__ENDPOINT_URL=http://127.0.0.1:5500/AuthUserInfo.html
+        - Authentication__Google__ENDPOINT_URL=https://ihorprogrammer.github.io/Booking_2.0/token-get-google
         - Authentication__Google__CLIENT_ID=711827789320-nb53rqb07tpb7g8teohd7a3hjmvro5iv.apps.googleusercontent.com
         - Authentication__Google__CLIENT_SECRET=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
 
@@ -92,7 +94,7 @@ services:
       MYSQL_PASSWORD: rNZzq5U37DqJlNe
       MYSQL_ROOT_PASSWORD: 4kDGQDYe4JxDjRd
     volumes:
-      - mysql_data:/var/lib/mysql
+       - ./mysql_data:/var/lib/mysql
     networks:
       - booking_network
 
@@ -115,4 +117,6 @@ networks:
     external: true
 
 volumes:
+  client_data:
   mysql_data:
+

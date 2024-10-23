@@ -1,14 +1,18 @@
 
 using BookingLibrary.ExceptionMiddleware;
 using BookingLibrary.Services.LoggerService;
+using BookingLibrary.Services.MessageSender;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Residence.API.Data.Mapping;
 using Residence.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+// Add services to the container.
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -51,6 +55,12 @@ builder.Services.AddSingleton<ILoggerManager>(provider =>
     var config = provider.GetRequiredService<IConfiguration>();
     string connectionString = config.GetConnectionString("LoggerServerConnection") ?? throw new Exception("LoggerServerConnection null");
     return new LoggerManager(connectionString, config);
+});
+builder.Services.AddSingleton<IMessageSender>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    string connectionString = "Email error";
+    return new MessageSender(connectionString);
 });
 
 var app = builder.Build();
