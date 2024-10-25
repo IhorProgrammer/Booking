@@ -1,0 +1,14 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /app
+
+RUN mkdir -p /app/images
+
+COPY ./BookingLibrary ./BookingLibrary
+COPY ./Residence ./Residence.API
+RUN dotnet restore ./Residence.API/Residence.API.csproj
+RUN dotnet publish ./Residence.API/Residence.API.csproj -c Release -o /app/out
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /app/out .
+ENTRYPOINT ["dotnet", "Residence.API.dll"]

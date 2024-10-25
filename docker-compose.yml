@@ -50,6 +50,23 @@ services:
     volumes:
        - ./client_data:/app/image
 
+  residence_api:
+    container_name: residence_api
+    build:
+      context: ./
+      dockerfile: Dockerfile.residence
+    ports:
+      - "5084:8080"
+    networks:
+      - booking_network
+    environment:
+        - ASPNETCORE_ENVIRONMENT=Development
+        - ConnectionStrings__DefaultConnection=server=db_mysql;port=3306;database=residence;user=admin;password=rNZzq5U37DqJlNe;AllowPublicKeyRetrieval=True;
+        - ConnectionStrings__LoggerServerConnection=http://logger_api:8080
+        - ServerName=Residence_API
+    volumes:
+       - ./residence_image:/app/images
+
   token_api:
     container_name: token_api
     build:
@@ -113,8 +130,7 @@ services:
 
 networks:
   booking_network:
-    driver: booking_network
-    external: true
+    driver: bridge
 
 volumes:
   client_data:
